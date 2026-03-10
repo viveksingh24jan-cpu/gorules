@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ZEN Decision Studio Pro</title>
+    <title>ZEN Decision Studio Master Pro</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
@@ -33,12 +33,6 @@
         .dmn-table input:focus { background: #e6effc; box-shadow: inset 0 0 0 2px var(--primary); }
         .row-winner { background-color: #e3fcef !important; outline: 2px solid #36b37e; }
 
-        /* Graph */
-        #view-graph { flex: 1; display: none; background-image: radial-gradient(#dfe1e6 1px, transparent 1px); background-size: 24px 24px; }
-        #view-graph.active { display: flex; }
-        .node-rect { fill: white; stroke: #42526e; stroke-width: 2px; rx: 6; cursor: grab; }
-        .node-rect.selected { stroke: var(--primary); stroke-width: 4px; }
-
         /* Bottom Panel */
         .bottom-panel { height: 280px; background: white; border-top: 1px solid var(--border); display: flex; }
         .sim-pane { flex: 1; display: flex; flex-direction: column; border-right: 1px solid var(--border); }
@@ -48,9 +42,13 @@
         .rule-item { padding: 12px 16px; border-bottom: 1px solid #f4f5f7; cursor: pointer; }
         .rule-item:hover { background: #f4f5f7; border-left: 4px solid var(--primary); }
         
-        .btn-action-group { display: flex; gap: 8px; }
         .btn-icon-danger { color: #de350b; cursor: pointer; opacity: 0.6; transition: 0.2s; }
         .btn-icon-danger:hover { opacity: 1; transform: scale(1.1); }
+
+        /* Integration Hub */
+        .integration-hub { background: #172b4d; color: #a5adba; border-radius: 4px; padding: 12px; font-family: 'Fira Code', monospace; font-size: 11px; position: relative; margin-top: 8px; overflow: auto; }
+        .copy-badge { position: absolute; top: 8px; right: 8px; background: rgba(255,255,255,0.1); padding: 2px 8px; border-radius: 4px; cursor: pointer; color: white; font-size: 10px; }
+        .copy-badge:hover { background: rgba(255,255,255,0.2); }
     </style>
 </head>
 <body>
@@ -72,20 +70,36 @@
     <div class="main-container">
         <!-- Sidebar -->
         <div class="sidebar">
-            <div class="p-3 border-bottom bg-light">
+            <div class="p-3 border-bottom bg-light d-flex justify-content-between">
                 <input type="text" id="search-rules" class="form-control form-control-sm" placeholder="Search rules..." oninput="filterRules(this.value)">
+                <button class="btn btn-sm btn-link" onclick="loadList()"><i class="fas fa-sync"></i></button>
             </div>
             <div id="rule-list" class="scroll"></div>
             
-            <div class="p-4 border-top mt-auto bg-white">
-                <h6 class="fw-bold mb-3 text-muted">DATA EXCHANGE</h6>
+            <!-- Integration Hub (cURL snippets) -->
+            <div class="p-3 border-top bg-light">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h6 class="small fw-bold text-muted mb-0">INTEGRATION HUB</h6>
+                    <select id="sdk-lang" class="form-select form-select-sm" style="width: 100px; font-size: 10px;" onchange="updateSDK()">
+                        <option value="curl">cURL</option>
+                        <option value="nodejs">Node.js</option>
+                        <option value="python">Python</option>
+                    </select>
+                </div>
+                <div class="integration-hub" style="height: 120px;">
+                    <div class="copy-badge" onclick="copySDK()"><i class="fas fa-copy"></i> Copy</div>
+                    <pre id="sdk-snippet" class="m-0" style="white-space: pre-wrap; word-break: break-all;"></pre>
+                </div>
+            </div>
+
+            <div class="p-3 border-top bg-white">
+                <h6 class="fw-bold mb-3 text-muted xsmall">EXCHANGE RULES</h6>
                 <div class="d-grid gap-2">
-                    <button class="btn btn-outline-primary btn-sm fw-bold" onclick="exportCSV()"><i class="fas fa-file-export me-2"></i>DOWNLOAD CSV TEMPLATE</button>
+                    <button class="btn btn-outline-primary btn-sm fw-bold" onclick="exportCSV()"><i class="fas fa-file-export me-2"></i>DOWNLOAD CSV</button>
                     <label class="btn btn-outline-success btn-sm fw-bold mb-0">
-                        <i class="fas fa-file-import me-2"></i>UPLOAD CSV RULES
+                        <i class="fas fa-file-import me-2"></i>UPLOAD CSV
                         <input type="file" id="csv-upload" hidden onchange="importCSV(this)" accept=".csv">
                     </label>
-                    <button class="btn btn-outline-info btn-sm fw-bold" onclick="downloadJDM()"><i class="fas fa-code me-2"></i>EXPORT JDM JSON</button>
                 </div>
             </div>
         </div>
@@ -96,7 +110,7 @@
                     <button id="tab-table" class="tab-btn active" onclick="switchView('table')"><i class="fas fa-table me-2"></i>DECISION TABLE</button>
                     <button id="tab-graph" class="tab-btn" onclick="switchView('graph')"><i class="fas fa-project-diagram me-2"></i>FLOW GRAPH</button>
                 </div>
-                <div id="table-controls" class="btn-action-group">
+                <div id="table-controls" class="d-flex gap-2">
                     <button class="btn btn-sm btn-primary fw-bold" onclick="addCol('input')"><i class="fas fa-plus me-1"></i>INPUT COL</button>
                     <button class="btn btn-sm btn-success fw-bold" onclick="addCol('output')"><i class="fas fa-plus me-1"></i>OUTPUT COL</button>
                     <button class="btn btn-sm btn-dark fw-bold px-3" onclick="addRow()"><i class="fas fa-plus me-1"></i>ADD ROW</button>
@@ -226,13 +240,52 @@
         function delCol(type, idx) { const n = currentJDM.nodes.find(n=>n.id===selectedNodeId); if(n) { const col = n.content[type+'s'][idx]; n.content[type+'s'].splice(idx, 1); n.content.rules.forEach(r => delete r[col.id]); renderTable(); } }
         function removeRow(idx) { const n = currentJDM.nodes.find(n=>n.id===selectedNodeId); if(n) { n.content.rules.splice(idx,1); renderTable(); } }
 
+        function updateSDK() {
+            const lang = document.getElementById('sdk-lang').value;
+            const name = document.getElementById('rule-name').value;
+            const snippets = {
+                curl: `curl -X POST http://localhost:3000/evaluate/${name} \\\n  -H "Content-Type: application/json" \\\n  -d '{"context": {"income": 5000}}'`,
+                nodejs: `const res = await fetch('http://localhost:3000/evaluate/${name}', {\n  method: 'POST',\n  headers: {'Content-Type': 'application/json'},\n  body: JSON.stringify({\n    context: { income: 5000 }\n  })\n});`,
+                python: `import requests\n\nres = requests.post(\n    'http://localhost:3000/evaluate/${name}',\n    json={'context': {'income': 5000}}\n)\nprint(res.json())`
+            };
+            document.getElementById('sdk-snippet').textContent = snippets[lang] || snippets.curl;
+        }
+
+        function copySDK() {
+            const text = document.getElementById('sdk-snippet').textContent;
+            navigator.clipboard.writeText(text);
+            const badge = document.querySelector('.copy-badge');
+            badge.innerHTML = '<i class="fas fa-check"></i> Copied!';
+            setTimeout(() => badge.innerHTML = '<i class="fas fa-copy"></i> Copy', 2000);
+        }
+
+        async function runSim() {
+            try {
+                const ctx = JSON.parse(document.getElementById('test-input').value);
+                const res = await fetch('/evaluate', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({decision:currentJDM, context:ctx, opts:{trace:true}}) });
+                const data = await res.json(); lastTrace = data.trace;
+                document.getElementById('test-result').textContent = JSON.stringify(data.result, null, 2);
+                document.getElementById('perf-list').innerHTML = Object.values(data.trace).map(t => `<div>${t.name}: <b class="float-end">${t.performance}</b></div>`).join('');
+                renderTable();
+            } catch(e) { alert("Invalid Simulation Context JSON"); }
+        }
+
+        async function deployRule() { await fetch(`/deploy/${document.getElementById('rule-name').value}`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(currentJDM) }); alert("Deployed!"); loadList(); updateSDK(); }
+        async function loadList() { allRules = await (await fetch('/decisions')).json(); document.getElementById('rule-list').innerHTML = allRules.map(n=>`<div class="rule-item" onclick="loadRule('${n}')"><b><i class="fas fa-file-code me-2 text-primary"></i>${n}</b></div>`).join(''); }
+        async function loadRule(n) { currentJDM = await (await fetch(`/deploy/${n}`)).json(); document.getElementById('rule-name').value=n; switchView('table'); updateSDK(); }
+        function resetStudio() { if(confirm("Reset everything?")) { currentJDM = JSON.parse(JSON.stringify(DEFAULT_TEMPLATE)); renderTable(); updateSDK(); } }
+        function downloadJDM() { const blob = new Blob([JSON.stringify(currentJDM,null,2)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download="decision.json"; a.click(); }
+        function autoLayout() { currentJDM.nodes.forEach((n,i) => { n.position.x = 100 + (i*250); n.position.y = 150; }); renderDRD(); }
+        function addNode(t) { const id='n'+Date.now(); currentJDM.nodes.push({id, type:t, name:'New Node', position:{x:200,y:200}, content:{ hitPolicy:'first', inputs:[{id:'i1',field:'input',name:'In'}], outputs:[{id:'o1',field:'output',name:'Out'}], rules:[{_id:'r1'}] }}); renderDRD(); }
+        function filterRules(q) { document.getElementById('rule-list').innerHTML = allRules.filter(n=>n.includes(q)).map(n=>`<div class="rule-item" onclick="loadRule('${n}')"><b>${n}</b></div>`).join(''); }
+
         function exportCSV() {
             const n = currentJDM.nodes.find(n => n.id === selectedNodeId);
             const dt = n.content;
             const headers = [...dt.inputs.map(i => i.field), ...dt.outputs.map(o => o.field)].join(',');
             const rows = dt.rules.map(r => [...dt.inputs.map(i => r[i.id]||''), ...dt.outputs.map(o => r[o.id]||'')].join(',')).join('\n');
             const blob = new Blob([headers + '\n' + rows], {type:'text/csv'});
-            const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `${document.getElementById('rule-name').value}_template.csv`; a.click();
+            const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `${document.getElementById('rule-name').value}.csv`; a.click();
         }
 
         function importCSV(input) {
@@ -243,7 +296,7 @@
                 if(lines.length < 2) return;
                 const n = currentJDM.nodes.find(n => n.id === selectedNodeId);
                 const dt = n.content;
-                dt.rules = []; // Clear existing
+                dt.rules = [];
                 for(let i=1; i<lines.length; i++) {
                     const vals = lines[i].split(','); if(vals.length < (dt.inputs.length + dt.outputs.length)) continue;
                     const rule = {_id: 'r'+Date.now()+i};
@@ -256,27 +309,7 @@
             reader.readAsText(file);
         }
 
-        async function runSim() {
-            try {
-                const ctx = JSON.parse(document.getElementById('test-input').value);
-                const res = await fetch('/evaluate', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({decision:currentJDM, context:ctx, opts:{trace:true}}) });
-                const data = await res.json(); lastTrace = data.trace;
-                document.getElementById('test-result').textContent = JSON.stringify(data.result, null, 2);
-                document.getElementById('perf-list').innerHTML = Object.values(data.trace).map(t => `<div>${t.name}: <b class="float-end">${t.performance}</b></div>`).join('');
-                renderTable(); document.getElementById('status-text').textContent = "Simulation Ready (" + data.performance + ")";
-            } catch(e) { alert("Invalid Simulation Context JSON"); }
-        }
-
-        async function deployRule() { await fetch(`/deploy/${document.getElementById('rule-name').value}`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(currentJDM) }); alert("Deployed!"); loadList(); }
-        async function loadList() { allRules = await (await fetch('/decisions')).json(); document.getElementById('rule-list').innerHTML = allRules.map(n=>`<div class="rule-item" onclick="loadRule('${n}')"><b><i class="fas fa-file-code me-2 text-primary"></i>${n}</b></div>`).join(''); }
-        async function loadRule(n) { currentJDM = await (await fetch(`/deploy/${n}`)).json(); document.getElementById('rule-name').value=n; switchView('table'); }
-        function resetStudio() { if(confirm("Reset everything?")) { currentJDM = JSON.parse(JSON.stringify(DEFAULT_TEMPLATE)); renderTable(); } }
-        function downloadJDM() { const blob = new Blob([JSON.stringify(currentJDM,null,2)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download="decision.json"; a.click(); }
-        function autoLayout() { currentJDM.nodes.forEach((n,i) => { n.position.x = 100 + (i*250); n.position.y = 150; }); renderDRD(); }
-        function addNode(t) { const id='n'+Date.now(); currentJDM.nodes.push({id, type:t, name:'New Node', position:{x:200,y:200}, content:{ hitPolicy:'first', inputs:[{id:'i1',field:'input',name:'In'}], outputs:[{id:'o1',field:'output',name:'Out'}], rules:[{_id:'r1'}] }}); renderDRD(); }
-        function filterRules(q) { document.getElementById('rule-list').innerHTML = allRules.filter(n=>n.includes(q)).map(n=>`<div class="rule-item" onclick="loadRule('${n}')"><b>${n}</b></div>`).join(''); }
-
-        window.onload = () => { switchView('table'); loadList(); };
+        window.onload = () => { switchView('table'); loadList(); updateSDK(); };
     </script>
 </body>
 </html>
