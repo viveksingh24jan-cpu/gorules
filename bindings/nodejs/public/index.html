@@ -410,7 +410,17 @@
             loadList();
         }
 
-        function resetStudio() { if(confirm("Reset everything?")) { currentJDM = JSON.parse(JSON.stringify(DEFAULT_TEMPLATE)); renderTable(); updateSDK(); document.getElementById('promote-btn').style.display = 'none'; } }
+        function newRule() { 
+            currentJDM = JSON.parse(JSON.stringify(DEFAULT_TEMPLATE)); 
+            document.getElementById('rule-name').value = "new_rule_" + Math.floor(Math.random()*1000); 
+            currentRuleInfo = null;
+            document.getElementById('promote-btn').style.display = 'none';
+            switchView('table'); 
+            updateSDK(); 
+            loadList();
+        }
+
+        function resetStudio() { if(confirm("Reset everything?")) { newRule(); } }
         function autoLayout() { currentJDM.nodes.forEach((n,i) => { n.position.x = 100 + (i*250); n.position.y = 150; }); renderDRD(); }
         function addNode(t) { const id='n'+Date.now(); currentJDM.nodes.push({id, type:t, name:'New Table', position:{x:200,y:200}, content:{ hitPolicy:'first', inputs:[{id:'i1',field:'input',name:'In'}], outputs:[{id:'o1',field:'output',name:'Out'}], rules:[{_id:'r1'}] }}); renderDRD(); }
 
