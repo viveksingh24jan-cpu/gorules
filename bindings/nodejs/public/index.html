@@ -412,12 +412,19 @@
 
         function newRule() { 
             currentJDM = JSON.parse(JSON.stringify(DEFAULT_TEMPLATE)); 
+            selectedNodeId = "dt1";
+            lastTrace = null;
+            
             document.getElementById('rule-name').value = "new_rule_" + Math.floor(Math.random()*1000); 
-            currentRuleInfo = null;
+            document.getElementById('test-result').textContent = "";
+            document.getElementById('perf-list').innerHTML = "";
             document.getElementById('promote-btn').style.display = 'none';
+            currentRuleInfo = null;
+            
             switchView('table'); 
             updateSDK(); 
             loadList();
+            logStatus("New rule template loaded");
         }
 
         function resetStudio() { if(confirm("Reset everything?")) { newRule(); } }
