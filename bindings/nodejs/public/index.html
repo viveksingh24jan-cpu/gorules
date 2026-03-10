@@ -319,20 +319,67 @@
         }
 
         async function loadList() { 
-            allRules = await (await fetch('/decisions')).json(); 
+            const res = await fetch('/decisions');
+            allRules = await res.json(); 
             const list = document.getElementById('rule-list');
-            list.innerHTML = allRules.map(r => `
-                <div class="rule-card ${currentRuleInfo?.name === r.name ? 'active' : ''}" onclick="loadRule('${r.name}')">
-                    <div class="d-flex justify-content-between align-items-center mb-1">
-                        <span class="fw-bold">${r.name}</span>
-                        <span class="badge-version">${r.latestVersion}</span>
+            
+            if (!allRules || allRules.length === 0) {
+                list.innerHTML = `
+                    <div class="p-4 text-center">
+                        <div class="text-muted small mb-3">No rules deployed yet.</div>
+                        <button class="btn btn-sm btn-primary fw-bold" onclick="deployRule()">CREATE FIRST RULE</button>
                     </div>
-                    <div class="d-flex gap-2 align-items-center">
-                        ${r.productionVersion ? `<span class="badge-prod">PROD: ${r.productionVersion}</span>` : '<span class="text-muted" style="font-size:10px">Draft</span>'}
-                        <span class="text-muted ms-auto" style="font-size:9px">${new Date(r.updatedAt).toLocaleDateString()}</span>
+                `;
+                return;
+            }
+
+            list.innerHTML = allRules.map(r => {
+                const name = r.name || 'Unnamed';
+                const version = r.latestVersion || 'v0';
+                const date = r.updatedAt ? new Date(r.updatedAt).toLocaleDateString() : 'New';
+                const activeClass = currentRuleInfo?.name === name ? 'active' : '';
+                
+                return `
+                    <div class="rule-card ${activeClass}" onclick="loadRule('${name}')">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="fw-bold">${name}</span>
+                            <span class="badge-version">${version}</span>
+                        </div>
+                        <div class="d-flex gap-2 align-items-center">
+                            ${r.productionVersion ? `<span class="badge-prod">PROD: ${r.productionVersion}</span>` : '<span class="text-muted" style="font-size:10px">Draft</span>'}
+                            <span class="text-muted ms-auto" style="font-size:9px">${date}</span>
+                        </div>
                     </div>
-                </div>
-            `).join('');
+                `;
+            }).join('');
+        }
+
+        function filterRules(q) { 
+            const filtered = allRules.filter(n => n.name && n.name.toLowerCase().includes(q.toLowerCase()));
+            const list = document.getElementById('rule-list');
+            if (filtered.length === 0) {
+                list.innerHTML = '<div class="p-3 text-center text-muted small">No matches found</div>';
+                return;
+            }
+            // Use same template logic as loadList but for filtered
+            list.innerHTML = filtered.map(r => {
+                const name = r.name || 'Unnamed';
+                const version = r.latestVersion || 'v0';
+                const date = r.updatedAt ? new Date(r.updatedAt).toLocaleDateString() : 'New';
+                const activeClass = currentRuleInfo?.name === name ? 'active' : '';
+                return `
+                    <div class="rule-card ${activeClass}" onclick="loadRule('${name}')">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="fw-bold">${name}</span>
+                            <span class="badge-version">${version}</span>
+                        </div>
+                        <div class="d-flex gap-2 align-items-center">
+                            ${r.productionVersion ? `<span class="badge-prod">PROD: ${r.productionVersion}</span>` : '<span class="text-muted" style="font-size:10px">Draft</span>'}
+                            <span class="text-muted ms-auto" style="font-size:9px">${date}</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
         }
 
         async function loadRule(n) { 
@@ -346,14 +393,21 @@
 
         async function promoteToProd() {
             const name = document.getElementById('rule-name').value;
-            await fetch(`/promote/${name}`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ versionId: currentRuleInfo.latestVersion }) });
-            alert("Promoted to PRODUCTION!"); loadList();
+            if(!currentRuleInfo) return;
+            const versionId = currentRuleInfo.latestVersion;
+            const res = await fetch(`/promote/${name}`, { 
+                method:'POST', 
+                headers:{'Content-Type':'application/json'}, 
+                body:JSON.stringify({ versionId }) 
+            });
+            const data = await res.json();
+            alert(data.message);
+            loadList();
         }
 
-        function resetStudio() { if(confirm("Reset everything?")) { currentJDM = JSON.parse(JSON.stringify(DEFAULT_TEMPLATE)); renderTable(); updateSDK(); } }
+        function resetStudio() { if(confirm("Reset everything?")) { currentJDM = JSON.parse(JSON.stringify(DEFAULT_TEMPLATE)); renderTable(); updateSDK(); document.getElementById('promote-btn').style.display = 'none'; } }
         function autoLayout() { currentJDM.nodes.forEach((n,i) => { n.position.x = 100 + (i*250); n.position.y = 150; }); renderDRD(); }
         function addNode(t) { const id='n'+Date.now(); currentJDM.nodes.push({id, type:t, name:'New Table', position:{x:200,y:200}, content:{ hitPolicy:'first', inputs:[{id:'i1',field:'input',name:'In'}], outputs:[{id:'o1',field:'output',name:'Out'}], rules:[{_id:'r1'}] }}); renderDRD(); }
-        function filterRules(q) { document.getElementById('rule-list').innerHTML = allRules.filter(n=>n.name.includes(q)).map(r => `<div class="rule-card" onclick="loadRule('${r.name}')"><b>${r.name}</b></div>`).join(''); }
 
         window.onload = () => { switchView('table'); loadList(); updateSDK(); };
     </script>
