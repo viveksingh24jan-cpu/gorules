@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ZEN Decision Studio Master Pro</title>
+    <title>ZEN Decision Studio Pro</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
@@ -12,158 +12,181 @@
         
         .navbar { background: white; border-bottom: 1px solid var(--border); height: 64px; padding: 0 24px; z-index: 1000; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
         .main-container { flex: 1; display: flex; overflow: hidden; }
-        .sidebar { width: 320px; background: white; border-right: 1px solid var(--border); display: flex; flex-direction: column; }
-        .content-area { flex: 1; display: flex; flex-direction: column; position: relative; background: #fff; overflow: hidden; }
         
-        /* Workspace Controls */
-        .workspace-header { background: #fdfdfd; border-bottom: 1px solid var(--border); padding: 12px 24px; display: flex; justify-content: space-between; align-items: center; }
+        /* Sidebar */
+        .sidebar { width: 320px; background: white; border-right: 1px solid var(--border); display: flex; flex-direction: column; z-index: 10; }
+        .sidebar-section { padding: 15px; border-bottom: 1px solid var(--border); }
+        .sidebar-label { font-size: 10px; font-weight: 800; color: #5e6c84; text-transform: uppercase; margin-bottom: 10px; letter-spacing: 0.5px; }
+        
+        /* Content Area */
+        .content-area { flex: 1; display: flex; flex-direction: column; position: relative; background: #fff; overflow: hidden; }
+        .workspace-header { background: #fdfdfd; border-bottom: 1px solid var(--border); padding: 8px 24px; display: flex; justify-content: space-between; align-items: center; min-height: 50px; }
+        
+        /* Tabs */
         .nav-tabs-custom { display: flex; gap: 4px; background: #ebecf0; padding: 4px; border-radius: 8px; }
-        .tab-btn { padding: 6px 20px; font-size: 13px; font-weight: 600; border: none; background: transparent; color: #42526e; border-radius: 6px; cursor: pointer; transition: 0.2s; }
+        .tab-btn { padding: 6px 16px; font-size: 12px; font-weight: 600; border: none; background: transparent; color: #42526e; border-radius: 6px; cursor: pointer; transition: 0.2s; }
         .tab-btn.active { background: white; color: var(--primary); box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
 
+        /* Views */
+        .view-container { flex: 1; display: none; overflow: hidden; position: relative; }
+        .view-container.active { display: flex; flex-direction: column; }
+
         /* DMN Table */
-        .dmn-table-container { flex: 1; overflow: auto; padding: 24px; background: #fafbfc; }
-        .dmn-table { border-collapse: collapse; min-width: 100%; font-size: 13px; table-layout: fixed; background: white; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border: 1px solid var(--border); }
-        .dmn-table th, .dmn-table td { border: 1px solid var(--border); position: relative; vertical-align: middle; }
-        .th-main-in { background: var(--input-blue); color: white; text-align: center; padding: 10px; font-size: 11px; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px; }
-        .th-main-out { background: var(--output-green); color: white; text-align: center; padding: 10px; font-size: 11px; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px; }
-        .th-sub { background: #f4f5f7; padding: 10px; color: #172b4d; font-weight: 600; }
-        
-        .dmn-table input { width: 100%; height: 40px; border: none; padding: 0 15px; outline: none; background: transparent; }
+        .dmn-table-wrapper { flex: 1; overflow: auto; padding: 24px; background: #fafbfc; }
+        .dmn-table { border-collapse: collapse; min-width: 100%; font-size: 13px; table-layout: fixed; background: white; border: 1px solid var(--border); }
+        .dmn-table th, .dmn-table td { border: 1px solid var(--border); position: relative; }
+        .th-main-in { background: var(--input-blue); color: white; text-align: center; padding: 8px; font-size: 11px; text-transform: uppercase; font-weight: 700; }
+        .th-main-out { background: var(--output-green); color: white; text-align: center; padding: 8px; font-size: 11px; text-transform: uppercase; font-weight: 700; }
+        .th-sub { background: #f4f5f7; padding: 8px; font-weight: 600; color: #172b4d; }
+        .dmn-table input { width: 100%; height: 38px; border: none; padding: 0 12px; outline: none; background: transparent; }
         .dmn-table input:focus { background: #e6effc; box-shadow: inset 0 0 0 2px var(--primary); }
         .row-winner { background-color: #e3fcef !important; outline: 2px solid #36b37e; }
 
-        /* Flow Graph */
-        #view-graph { flex: 1; display: none; background: #fafbfc; }
-        #view-graph.active { display: flex; }
-        #drd-canvas { flex: 1; cursor: grab; width: 100%; height: 100%; background-image: radial-gradient(#dfe1e6 1px, transparent 1px); background-size: 24px 24px; }
-        .node-rect { fill: white; stroke: #42526e; stroke-width: 2px; rx: 8; cursor: grab; }
+        /* Graph View */
+        #drd-canvas { flex: 1; cursor: grab; background-image: radial-gradient(#dfe1e6 1px, transparent 1px); background-size: 24px 24px; background-color: #fafbfc; }
+        .node-rect { fill: white; stroke: #42526e; stroke-width: 2px; rx: 8; transition: all 0.2s; }
         .node-rect.selected { stroke: var(--primary); stroke-width: 4px; }
+        .node-rect.decisionTableNode { stroke: var(--primary); }
         .node-rect.functionNode { stroke: #ffab00; }
         .node-text { font-size: 12px; font-weight: 700; fill: #172b4d; pointer-events: none; }
         .edge-path { fill: none; stroke: #b3bac5; stroke-width: 2.5px; }
 
-        /* Sidebar Items */
+        /* Bottom Simulator */
+        .bottom-panel { height: 300px; background: white; border-top: 1px solid var(--border); display: flex; box-shadow: 0 -2px 10px rgba(0,0,0,0.03); }
+        .sim-pane { flex: 1; display: flex; flex-direction: column; border-right: 1px solid var(--border); min-width: 200px; }
+        .pane-header { padding: 10px 16px; background: #fdfdfd; border-bottom: 1px solid var(--border); font-size: 11px; font-weight: 700; color: #5e6c84; display: flex; justify-content: space-between; align-items: center; text-transform: uppercase; }
+
+        /* Sidebar Item */
         .rule-item-container { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; border-bottom: 1px solid #f4f5f7; cursor: pointer; transition: 0.2s; }
         .rule-item-container:hover { background: #f4f5f7; border-left: 4px solid var(--primary); }
-        .rule-item-name { font-size: 14px; font-weight: 600; flex: 1; }
-        .btn-delete-rule { color: #de350b; opacity: 0.3; transition: 0.2s; padding: 4px 8px; }
+        .btn-delete-rule { color: #de350b; opacity: 0.3; transition: 0.2s; padding: 4px; }
         .rule-item-container:hover .btn-delete-rule { opacity: 1; }
 
-        /* Integration & SDK */
-        .integration-hub { background: #172b4d; color: #a5adba; border-radius: 6px; padding: 15px; font-family: monospace; font-size: 11px; position: relative; border: 1px solid #091e42; }
-        .copy-badge { position: absolute; top: 10px; right: 10px; background: rgba(255,255,255,0.1); padding: 4px 10px; border-radius: 4px; cursor: pointer; color: white; font-size: 10px; }
+        /* Integration Hub */
+        .integration-hub { background: #172b4d; color: #a5adba; border-radius: 6px; padding: 12px; font-family: 'Fira Code', monospace; font-size: 11px; position: relative; margin-top: 5px; overflow: auto; min-height: 80px; }
+        .copy-badge { position: absolute; top: 8px; right: 8px; background: rgba(255,255,255,0.1); padding: 2px 8px; border-radius: 4px; cursor: pointer; color: white; font-size: 9px; font-weight: bold; }
 
-        /* Pro Editor Overlay */
-        .editor-overlay { position: absolute; inset: 0; background: white; z-index: 3000; display: none; flex-direction: column; }
+        /* Logic Editor Overlay */
+        .editor-overlay { position: absolute; inset: 0; background: white; z-index: 2000; display: none; flex-direction: column; }
         .editor-overlay.active { display: flex !important; }
-        #ace-editor { flex: 1; font-size: 14px; }
+        #ace-editor { flex: 1; width: 100%; }
 
         .btn-icon-danger { color: #de350b; cursor: pointer; opacity: 0.6; transition: 0.2s; }
         .btn-icon-danger:hover { opacity: 1; transform: scale(1.2); }
+        .scroll { flex: 1; overflow: auto; }
     </style>
 </head>
 <body>
+    <!-- Top Navigation -->
     <nav class="navbar d-flex justify-content-between align-items-center">
         <div class="d-flex align-items-center">
-            <img src="https://gorules.io/images/logo.svg" height="32" class="me-3">
-            <h4 class="mb-0 fw-bold text-primary">ZEN Decision Studio Pro</h4>
+            <img src="https://gorules.io/images/logo.svg" height="30" class="me-3">
+            <h5 class="mb-0 fw-bold text-primary">ZEN Decision Studio Pro</h5>
         </div>
         <div class="d-flex gap-3">
             <div class="input-group shadow-sm" style="width: 450px;">
                 <span class="input-group-text bg-light fw-bold text-muted small">DEPLOY ID</span>
                 <input type="text" id="rule-name" class="form-control fw-bold" value="loan_approval_model">
-                <button class="btn btn-primary px-4 fw-bold" onclick="deployRule()"><i class="fas fa-rocket me-2"></i>DEPLOY</button>
+                <button class="btn btn-primary px-4 fw-bold shadow-none" onclick="deployRule()" title="Push rules to engine"><i class="fas fa-rocket me-2"></i>DEPLOY</button>
             </div>
-            <button class="btn btn-outline-danger fw-bold" onclick="resetStudio()">RESET STUDIO</button>
+            <button class="btn btn-outline-danger fw-bold" onclick="resetStudio()">RESET</button>
         </div>
     </nav>
 
     <div class="main-container">
         <!-- Sidebar -->
         <div class="sidebar shadow-sm">
-            <div class="p-3 border-bottom bg-light d-flex justify-content-between align-items-center">
-                <input type="text" id="search-rules" class="form-control form-control-sm me-2" placeholder="Search rules..." oninput="filterRules(this.value)">
-                <i class="fas fa-sync text-muted cursor-pointer" onclick="loadList()"></i>
-            </div>
-            <div id="rule-list" class="scroll">
-                <!-- List will be here -->
+            <div class="sidebar-section bg-light">
+                <div class="sidebar-label">Saved Deployments</div>
+                <div class="input-group input-group-sm mb-2">
+                    <input type="text" id="search-rules" class="form-control" placeholder="Search..." oninput="filterRules(this.value)">
+                    <button class="btn btn-outline-secondary" onclick="loadList()"><i class="fas fa-sync"></i></button>
+                </div>
+                <div id="rule-list" class="scroll" style="max-height: 250px;"></div>
             </div>
             
-            <div class="p-3 border-top bg-light">
-                <h6 class="small fw-bold text-muted mb-2">SDK HUB</h6>
-                <div class="integration-hub" style="height: 120px;">
+            <div class="sidebar-section">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <div class="sidebar-label m-0">Integration SDK</div>
+                    <select id="sdk-lang" class="form-select form-select-sm w-auto" style="font-size: 10px; height: 22px; padding: 0 20px 0 8px;" onchange="updateSDK()">
+                        <option value="curl">cURL</option>
+                        <option value="nodejs">Node.js</option>
+                        <option value="python">Python</option>
+                    </select>
+                </div>
+                <div class="integration-hub">
                     <div class="copy-badge" onclick="copySDK()"><i class="fas fa-copy"></i> COPY</div>
-                    <pre id="sdk-snippet" class="m-0"></pre>
+                    <pre id="sdk-snippet" class="m-0" style="white-space: pre-wrap; word-break: break-all;"></pre>
                 </div>
             </div>
 
-            <div class="p-3 border-top bg-white">
+            <div class="sidebar-section mt-auto bg-white">
+                <div class="sidebar-label">Excel Exchange</div>
                 <div class="d-grid gap-2">
-                    <button class="btn btn-outline-primary btn-sm fw-bold" onclick="exportCSV()"><i class="fas fa-file-export me-2"></i>EXPORT CSV</button>
+                    <button class="btn btn-outline-primary btn-sm fw-bold" onclick="exportCSV()"><i class="fas fa-file-export me-2"></i>DOWNLOAD TEMPLATE</button>
                     <label class="btn btn-outline-success btn-sm fw-bold mb-0">
-                        <i class="fas fa-file-import me-2"></i>IMPORT CSV
+                        <i class="fas fa-file-import me-2"></i>UPLOAD RULES (CSV)
                         <input type="file" id="csv-upload" hidden onchange="importCSV(this)" accept=".csv">
                     </label>
                 </div>
             </div>
         </div>
 
+        <!-- Main Workspace -->
         <div class="content-area">
             <div class="workspace-header">
                 <div class="nav-tabs-custom">
-                    <button id="tab-table" class="tab-btn active" onclick="switchView('table')"><i class="fas fa-table me-2"></i>DECISION TABLE</button>
-                    <button id="tab-graph" class="tab-btn" onclick="switchView('graph')"><i class="fas fa-project-diagram me-2"></i>FLOW GRAPH</button>
+                    <button id="tab-table" class="tab-btn active" onclick="switchView('table')"><i class="fas fa-table me-2"></i>TABLE VIEW</button>
+                    <button id="tab-graph" class="tab-btn" onclick="switchView('graph')"><i class="fas fa-project-diagram me-2"></i>GRAPH VIEW</button>
                 </div>
                 <div id="table-controls" class="d-flex gap-2">
                     <button class="btn btn-sm btn-primary fw-bold" onclick="addCol('input')">+ INPUT COL</button>
                     <button class="btn btn-sm btn-success fw-bold" onclick="addCol('output')">+ OUTPUT COL</button>
-                    <button class="btn btn-sm btn-dark fw-bold px-3" onclick="addRow()">+ ADD ROW</button>
+                    <button class="btn btn-sm btn-dark px-3 fw-bold" onclick="addRow()">+ ADD ROW</button>
                 </div>
             </div>
 
-            <!-- Full DMN Table -->
-            <div id="view-table" class="dmn-table-container">
-                <table class="dmn-table" id="dmn-table">
-                    <thead id="dmn-thead"></thead>
-                    <tbody id="dmn-tbody"></tbody>
-                </table>
+            <!-- Table View Container -->
+            <div id="view-table" class="view-container active">
+                <div class="dmn-table-wrapper">
+                    <table class="dmn-table" id="dmn-table">
+                        <thead id="dmn-thead"></thead>
+                        <tbody id="dmn-tbody"></tbody>
+                    </table>
+                </div>
             </div>
 
-            <!-- Flow Graph View -->
-            <div id="view-graph">
-                <div class="p-3 position-absolute" style="z-index:10; display:flex; gap:10px">
-                    <button class="btn btn-sm btn-white border shadow-sm" onclick="addNode('decisionTableNode')">+ Table</button>
-                    <button class="btn btn-sm btn-white border shadow-sm" onclick="addNode('functionNode')">+ JS Function</button>
-                    <button class="btn btn-sm btn-white border shadow-sm" onclick="autoLayout()"><i class="fas fa-magic"></i> Auto Layout</button>
+            <!-- Graph View Container -->
+            <div id="view-graph" class="view-container">
+                <div class="p-3 position-absolute" style="z-index:10; display:flex; gap:8px">
+                    <button class="btn btn-sm btn-white border shadow-sm" onclick="addNode('decisionTableNode')">+ Table Node</button>
+                    <button class="btn btn-sm btn-white border shadow-sm" onclick="addNode('functionNode')">+ JS Node</button>
+                    <button class="btn btn-sm btn-white border shadow-sm ms-2" onclick="autoLayout()"><i class="fas fa-magic"></i> Auto Layout</button>
+                    <button class="btn btn-sm btn-outline-danger border shadow-sm" onclick="deleteSelected()"><i class="fas fa-trash"></i></button>
                 </div>
                 <svg id="drd-canvas"></svg>
             </div>
 
-            <!-- Pro Code Editor Overlay -->
+            <!-- Editor Overlay -->
             <div id="editor-overlay" class="editor-overlay">
-                <div class="editor-header border-bottom shadow-sm">
-                    <h5 class="m-0 fw-bold" id="editor-title">Logic Editor</h5>
-                    <div class="d-flex gap-2">
-                        <button class="btn btn-sm btn-outline-info" onclick="addJsPlugin('lodash')">Load Lodash</button>
-                        <button class="btn btn-sm btn-outline-info" onclick="addJsPlugin('mathjs')">Load MathJS</button>
-                        <button class="btn btn-sm btn-dark px-4 fw-bold" onclick="closeEditor()">SAVE & CLOSE</button>
-                    </div>
+                <div class="p-3 border-bottom d-flex justify-content-between align-items-center bg-light">
+                    <h6 class="m-0 fw-bold" id="editor-title">Logic Editor</h6>
+                    <button class="btn btn-sm btn-dark px-4 fw-bold" onclick="closeEditor()">SAVE & CLOSE</button>
                 </div>
                 <div id="ace-editor"></div>
             </div>
 
-            <!-- Simulator -->
+            <!-- Simulator Hub -->
             <div class="bottom-panel">
-                <div class="sim-pane" style="max-width: 420px;">
-                    <div class="pane-header">INPUT (JSON) <button class="btn btn-xs btn-success fw-bold px-3" onclick="runSim()">RUN</button></div>
-                    <textarea id="test-input" class="form-control font-monospace border-0 rounded-0 flex-grow-1 p-3" style="font-size:12px; background:#fdfdfd">{ "income": 5000 }</textarea>
+                <div class="sim-pane" style="flex: 0 0 35%;">
+                    <div class="pane-header">INPUT CONTEXT <button class="btn btn-xs btn-success fw-bold" onclick="runSim()">RUN TEST</button></div>
+                    <textarea id="test-input" class="form-control font-monospace border-0 rounded-0 flex-grow-1 p-3" style="font-size:12px; background:#fafafa">{ "income": 5000 }</textarea>
                 </div>
-                <div class="sim-pane">
-                    <div class="pane-header">RESULT</div>
+                <div class="sim-pane" style="flex: 0 0 45%;">
+                    <div class="pane-header">SIMULATION RESULT</div>
                     <pre id="test-result" class="scroll m-0 p-3 text-primary small fw-bold"></pre>
                 </div>
-                <div class="sim-pane" style="max-width: 250px;">
+                <div class="sim-pane" style="flex: 0 0 20%; border-right: none;">
                     <div class="pane-header">PERFORMANCE</div>
                     <div id="perf-list" class="scroll p-3 small font-monospace text-success"></div>
                 </div>
@@ -171,15 +194,15 @@
         </div>
     </div>
 
-    <!-- Ace Editor -->
+    <!-- Ace Editor & D3 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.23.4/ace.js"></script>
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <script>
         const DEFAULT_TEMPLATE = {
             nodes: [
-                { id: "in1", type: "inputNode", name: "Request", position: { x: 100, y: 150 }, content: { schema: null } },
-                { id: "dt1", type: "decisionTableNode", name: "Rules", position: { x: 350, y: 150 }, content: { hitPolicy: "first", inputs: [{ id: "i1", field: "income", name: "Income" }], outputs: [{ id: "o1", field: "res", name: "Decision" }], rules: [{ _id: "r1", i1: "> 4000", o1: "'APPROVED'" }] } },
-                { id: "out1", type: "outputNode", name: "Response", position: { x: 600, y: 150 }, content: { schema: null } }
+                { id: "in1", type: "inputNode", name: "Application", position: { x: 80, y: 150 }, content: { schema: null } },
+                { id: "dt1", type: "decisionTableNode", name: "Risk Logic", position: { x: 320, y: 150 }, content: { hitPolicy: "first", inputs: [{ id: "i1", field: "income", name: "Income" }], outputs: [{ id: "o1", field: "risk", name: "Result" }], rules: [{ _id: "r1", i1: "> 4000", o1: "'LOW'" }] } },
+                { id: "out1", type: "outputNode", name: "Decision", position: { x: 580, y: 150 }, content: { schema: null } }
             ],
             edges: [{ id: "e1", sourceId: "in1", targetId: "dt1" }, { id: "e2", sourceId: "dt1", targetId: "out1" }]
         };
@@ -191,14 +214,14 @@
         editor.session.setMode("ace/mode/javascript");
 
         const svg = d3.select("#drd-canvas"), container = svg.append("g");
-        svg.call(d3.zoom().on("zoom", (ev) => container.attr("transform", ev.transform)));
+        svg.call(d3.zoom().scaleExtent([0.1, 4]).on("zoom", (ev) => container.attr("transform", ev.transform)));
 
         function switchView(v) {
-            document.getElementById('view-table').style.display = (v === 'table' ? 'block' : 'none');
-            document.getElementById('view-graph').classList.toggle('active', v === 'graph');
+            document.getElementById('view-table').style.display = (v === 'table' ? 'flex' : 'none');
+            document.getElementById('view-graph').style.display = (v === 'graph' ? 'flex' : 'none');
             document.getElementById('tab-table').classList.toggle('active', v === 'table');
             document.getElementById('tab-graph').classList.toggle('active', v === 'graph');
-            document.getElementById('table-controls').style.display = (v === 'table' ? 'flex' : 'none');
+            document.getElementById('table-controls').style.visibility = (v === 'table' ? 'visible' : 'hidden');
             if (v === 'table') renderTable(); else renderDRD();
         }
 
@@ -211,22 +234,11 @@
             });
             const nodes = container.selectAll(".node").data(currentJDM.nodes).enter().append("g").attr("transform", d => `translate(${d.position.x},${d.position.y})`).call(d3.drag().on("drag", (ev, d) => { d.position.x += ev.dx; d.position.y += ev.dy; renderDRD(); }))
                 .on("click", (ev, d) => { ev.stopPropagation(); selectedNodeId = d.id; renderDRD(); })
-                .on("dblclick", (ev, d) => openEditor(d));
+                .on("dblclick", (ev, d) => { if(d.type==='functionNode') openEditor(d); else if(d.type==='decisionTableNode') switchView('table'); });
 
             nodes.append("rect").attr("width", 160).attr("height", 70).attr("class", d => "node-rect " + d.type + (selectedNodeId === d.id ? " selected" : ""));
             nodes.append("text").attr("x", 80).attr("y", 40).attr("class", "node-text").attr("text-anchor","middle").text(d => d.name);
         }
-
-        function openEditor(node) {
-            if(node.type === 'functionNode') {
-                document.getElementById('editor-overlay').classList.add('active');
-                document.getElementById('editor-title').textContent = "Editing: " + node.name;
-                editor.setValue(node.content.source || "async ({ input }) => {\n  return input;\n}", -1);
-                editor.session.on('change', () => { node.content.source = editor.getValue(); });
-            }
-        }
-
-        function closeEditor() { document.getElementById('editor-overlay').classList.remove('active'); }
 
         function renderTable() {
             let dtNode = currentJDM.nodes.find(n => n.id === selectedNodeId && n.type === 'decisionTableNode') || currentJDM.nodes.find(n => n.type === 'decisionTableNode');
@@ -265,9 +277,36 @@
 
         function updateCell(nid,rIdx,cid,val) { const n = currentJDM.nodes.find(n=>n.id===nid); if(n) n.content.rules[rIdx][cid] = val; }
         function addRow() { const n = currentJDM.nodes.find(n=>n.id===selectedNodeId); if(n) { n.content.rules.push({_id:'r'+Date.now()}); renderTable(); } }
-        function addCol(t) { const n = currentJDM.nodes.find(n=>n.id===selectedNodeId); if(n) { const id = t[0]+Date.now(); n.content[t+'s'].push({id, field:'field_'+id, name:'New Col'}); renderTable(); } }
+        function addCol(t) { const n = currentJDM.nodes.find(n=>n.id===selectedNodeId); if(n) { const id = t[0]+Date.now(); n.content[t+'s'].push({id, field:'field_'+id, name:'New '+t}); renderTable(); } }
         function delCol(type, idx) { const n = currentJDM.nodes.find(n=>n.id===selectedNodeId); if(n) { const col = n.content[type+'s'][idx]; n.content[type+'s'].splice(idx, 1); n.content.rules.forEach(r => delete r[col.id]); renderTable(); } }
         function removeRow(idx) { const n = currentJDM.nodes.find(n=>n.id===selectedNodeId); if(n) { n.content.rules.splice(idx,1); renderTable(); } }
+
+        function openEditor(node) {
+            document.getElementById('editor-overlay').classList.add('active');
+            document.getElementById('editor-title').textContent = "Editing Node Logic: " + node.name;
+            editor.setValue(node.content.source || "async ({ input }) => {\n  return input;\n}", -1);
+            editor.session.on('change', () => { node.content.source = editor.getValue(); });
+        }
+        function closeEditor() { document.getElementById('editor-overlay').classList.remove('active'); renderDRD(); }
+
+        function updateSDK() {
+            const lang = document.getElementById('sdk-lang').value;
+            const name = document.getElementById('rule-name').value;
+            const snippets = {
+                curl: `curl -X POST http://localhost:3000/evaluate/${name} \\\n  -H "Content-Type: application/json" \\\n  -d '{"context": {"income": 5000}}'`,
+                nodejs: `const res = await fetch('http://localhost:3000/evaluate/${name}', {\n  method: 'POST',\n  headers: {'Content-Type': 'application/json'},\n  body: JSON.stringify({\n    context: { income: 5000 }\n  })\n});`,
+                python: `import requests\n\nres = requests.post(\n    'http://localhost:3000/evaluate/${name}',\n    json={'context': {'income': 5000}}\n)\nprint(res.json())`
+            };
+            document.getElementById('sdk-snippet').textContent = snippets[lang] || snippets.curl;
+        }
+
+        function copySDK() {
+            const text = document.getElementById('sdk-snippet').textContent;
+            navigator.clipboard.writeText(text);
+            const badge = document.querySelector('.copy-badge');
+            badge.innerHTML = '<i class="fas fa-check"></i> COPIED!';
+            setTimeout(() => badge.innerHTML = '<i class="fas fa-copy"></i> COPY', 2000);
+        }
 
         async function runSim() {
             try {
@@ -275,47 +314,55 @@
                 const res = await fetch('/evaluate', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({decision:currentJDM, context:ctx, opts:{trace:true}}) });
                 const data = await res.json(); lastTrace = data.trace;
                 document.getElementById('test-result').textContent = JSON.stringify(data.result, null, 2);
-                document.getElementById('perf-list').innerHTML = Object.values(data.trace).map(t => `<div class="d-flex justify-content-between"><span>${t.name}</span><b>${t.performance}</b></div>`).join('');
+                document.getElementById('perf-list').innerHTML = Object.values(data.trace).map(t => `<div class="d-flex justify-content-between mb-1"><span>${t.name}</span><b>${t.performance}</b></div>`).join('');
                 renderTable();
             } catch(e) { alert("Invalid Simulation Context JSON"); }
         }
 
-        async function deployRule() { await fetch(`/deploy/${document.getElementById('rule-name').value}`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(currentJDM) }); loadList(); alert("Deployed!"); }
-        
+        async function deployRule() { await fetch(`/deploy/${document.getElementById('rule-name').value}`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(currentJDM) }); loadList(); updateSDK(); alert("Deployed!"); }
         async function loadList() { 
             allRules = await (await fetch('/decisions')).json(); 
             const list = document.getElementById('rule-list');
-            if(allRules.length === 0) {
-                list.innerHTML = `<div class="p-4 text-center"><button class="btn btn-sm btn-primary fw-bold" onclick="newRule()">+ CREATE FIRST RULE</button></div>`;
-            } else {
-                filterRules(""); 
-            }
+            if(allRules.length === 0) list.innerHTML = `<div class='p-3 text-center'><button class='btn btn-sm btn-primary fw-bold' onclick='newRule()'>+ CREATE NEW</button></div>`;
+            else filterRules(""); 
+        }
+        async function deleteRule(name, e) { e.stopPropagation(); if(confirm(`Delete ${name}?`)) { await fetch(`/deploy/${name}`, { method: 'DELETE' }); loadList(); } }
+        function filterRules(q) { document.getElementById('rule-list').innerHTML = allRules.filter(n=>n.includes(q)).map(n=>`<div class="rule-item-container" onclick="loadRule('${n}')"><span class="rule-item-name"><i class="fas fa-file-code me-2 text-primary"></i>${n}</span><i class="fas fa-trash btn-delete-rule" onclick="deleteRule('${n}', event)"></i></div>`).join(''); }
+        async function loadRule(n) { currentJDM = await (await fetch(`/deploy/${n}`)).json(); document.getElementById('rule-name').value=n; switchView('table'); updateSDK(); }
+        function resetStudio() { if(confirm("Reset canvas?")) { currentJDM = JSON.parse(JSON.stringify(DEFAULT_TEMPLATE)); renderTable(); updateSDK(); } }
+        function newRule() { currentJDM = JSON.parse(JSON.stringify(DEFAULT_TEMPLATE)); document.getElementById('rule-name').value="new_model"; switchView('table'); updateSDK(); }
+        function autoLayout() { currentJDM.nodes.forEach((n,i) => { n.position.x = 80 + (i*250); n.position.y = 150; }); renderDRD(); }
+        function addNode(t) { const id='n'+Date.now(); currentJDM.nodes.push({id, type:t, name:'New '+t.replace('Node',''), position:{x:200,y:200}, content:{ hitPolicy:'first', inputs:[{id:'i1',field:'input',name:'In'}], outputs:[{id:'o1',field:'output',name:'Out'}], rules:[{_id:'r1'}], source: "async ({ input }) => {\n  return input;\n}" }}); renderDRD(); }
+        function deleteSelected() { currentJDM.nodes=currentJDM.nodes.filter(n=>n.id!==selectedNodeId); currentJDM.edges=currentJDM.edges.filter(e=>e.sourceId!==selectedNodeId&&e.targetId!==selectedNodeId); selectedNodeId=null; renderDRD(); }
+
+        function exportCSV() {
+            const dt = currentJDM.nodes.find(n => n.id === selectedNodeId).content;
+            const headers = [...dt.inputs.map(i => i.field), ...dt.outputs.map(o => o.field)].join(',');
+            const rows = dt.rules.map(r => [...dt.inputs.map(i => r[i.id]||''), ...dt.outputs.map(o => r[o.id]||'')].join(',')).join('\n');
+            const blob = new Blob([headers + '\n' + rows], {type:'text/csv'});
+            const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `${document.getElementById('rule-name').value}.csv`; a.click();
         }
 
-        async function deleteRule(name, e) {
-            e.stopPropagation();
-            if(confirm(`Delete rule '${name}'?`)) {
-                await fetch(`/deploy/${name}`, { method: 'DELETE' });
-                loadList();
-            }
+        function importCSV(input) {
+            const file = input.files[0]; if(!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const lines = e.target.result.split('\n'); if(lines.length < 2) return;
+                const dt = currentJDM.nodes.find(n => n.id === selectedNodeId).content;
+                dt.rules = [];
+                for(let i=1; i<lines.length; i++) {
+                    const vals = lines[i].split(','); if(vals.length < (dt.inputs.length + dt.outputs.length)) continue;
+                    const rule = {_id: 'r'+Date.now()+i};
+                    dt.inputs.forEach((inp, idx) => rule[inp.id] = vals[idx]);
+                    dt.outputs.forEach((out, idx) => rule[out.id] = vals[dt.inputs.length + idx]);
+                    dt.rules.push(rule);
+                }
+                renderTable(); alert("Imported!");
+            };
+            reader.readAsText(file);
         }
 
-        function filterRules(q) { 
-            document.getElementById('rule-list').innerHTML = allRules.filter(n=>n.includes(q)).map(n=>`
-                <div class="rule-item-container" onclick="loadRule('${n}')">
-                    <span class="rule-item-name"><i class="fas fa-file-code me-2 text-primary"></i>${n}</span>
-                    <i class="fas fa-trash btn-delete-rule" onclick="deleteRule('${n}', event)"></i>
-                </div>
-            `).join(''); 
-        }
-
-        async function loadRule(n) { currentJDM = await (await fetch(`/deploy/${n}`)).json(); document.getElementById('rule-name').value=n; switchView('table'); }
-        function resetStudio() { if(confirm("Clear all logic?")) { currentJDM = JSON.parse(JSON.stringify(DEFAULT_TEMPLATE)); renderTable(); } }
-        function newRule() { currentJDM = JSON.parse(JSON.stringify(DEFAULT_TEMPLATE)); document.getElementById('rule-name').value = "new_rule"; switchView('table'); }
-        function autoLayout() { currentJDM.nodes.forEach((n,i) => { n.position.x = 100 + (i*250); n.position.y = 150; }); renderDRD(); }
-        function addNode(t) { const id='n'+Date.now(); currentJDM.nodes.push({id, type:t, name:'New Node', position:{x:200,y:200}, content:{ hitPolicy:'first', inputs:[{id:'i1',field:'input',name:'In'}], outputs:[{id:'o1',field:'output',name:'Out'}], rules:[{_id:'r1'}], source: "async ({ input }) => {\n  return input;\n}" }}); renderDRD(); }
-
-        window.onload = () => { switchView('table'); loadList(); };
+        window.onload = () => { switchView('table'); loadList(); updateSDK(); };
     </script>
 </body>
 </html>
