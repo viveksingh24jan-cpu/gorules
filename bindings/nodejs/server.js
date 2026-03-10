@@ -22,9 +22,17 @@ app.post('/deploy/:name', async (req, res) => {
     const content = req.body;
     if (!content.nodes) return res.status(400).json({ error: 'Invalid JDM content' });
     
+    const metadata = {
+      name,
+      updatedAt: new Date().toISOString(),
+      nodeCount: content.nodes.length
+    };
+    
     await fs.mkdir(DEPLOY_DIR, { recursive: true });
     await fs.writeFile(path.join(DEPLOY_DIR, `${name}.json`), JSON.stringify(content, null, 2));
-    res.json({ message: `Decision '${name}' deployed successfully.` });
+    await fs.writeFile(path.join(DEPLOY_DIR, `${name}.meta.json`), JSON.stringify(metadata, null, 2));
+    
+    res.json({ message: `Decision '${name}' deployed successfully.`, metadata });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
