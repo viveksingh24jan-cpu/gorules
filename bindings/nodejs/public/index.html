@@ -90,9 +90,14 @@
     <div class="main-container">
         <!-- Sidebar -->
         <div class="sidebar shadow-sm">
-            <div class="p-3 border-bottom bg-light d-flex justify-content-between align-items-center">
-                <input type="text" id="search-rules" class="form-control form-control-sm me-2" placeholder="Search rules..." oninput="filterRules(this.value)">
-                <i class="fas fa-sync text-muted cursor-pointer" onclick="loadList()" data-narrate="Refresh deployment list"></i>
+            <div class="p-3 border-bottom bg-white">
+                <button class="btn btn-primary w-100 fw-bold mb-3 shadow-sm" onclick="newRule()" data-narrate="Start a completely new Decision Model">
+                    <i class="fas fa-plus-circle me-2"></i>CREATE NEW RULE
+                </button>
+                <div class="d-flex justify-content-between align-items-center">
+                    <input type="text" id="search-rules" class="form-control form-control-sm me-2" placeholder="Search rules..." oninput="filterRules(this.value)">
+                    <i class="fas fa-sync text-muted cursor-pointer" onclick="loadList()" data-narrate="Refresh deployment list"></i>
+                </div>
             </div>
             <div id="rule-list" class="scroll"></div>
             
