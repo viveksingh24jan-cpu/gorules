@@ -6,7 +6,11 @@ const app = express();
 const port = 3000;
 
 app.use(express.json({ limit: '50mb' }));
-app.use(express.static('public'));
+app.use(express.static(path.join(__dirname, 'public')));
+
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
 
 const engine = new ZenEngine();
 const DEPLOY_DIR = path.join(__dirname, 'deployments');
@@ -26,6 +30,17 @@ app.post('/deploy/:name', async (req, res) => {
   }
 });
 
+// 1b. Get a deployed decision
+app.get('/deploy/:name', async (req, res) => {
+  try {
+    const { name } = req.params;
+    const content = await fs.readFile(path.join(DEPLOY_DIR, `${name}.json`), 'utf-8');
+    res.json(JSON.parse(content));
+  } catch (err) {
+    res.status(404).json({ error: `Decision '${name}' not found.` });
+  }
+});
+
 // 2. List deployed decisions
 app.get('/decisions', async (req, res) => {
   try {
@@ -36,15 +51,26 @@ app.get('/decisions', async (req, res) => {
   }
 });
 
+// 2b. Delete a decision
+app.delete('/deploy/:name', async (req, res) => {
+  try {
+    const { name } = req.params;
+    await fs.unlink(path.join(DEPLOY_DIR, `${name}.json`));
+    res.json({ message: `Decision '${name}' deleted.` });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // 3. Evaluate a deployed decision by name
 app.post('/evaluate/:name', async (req, res) => {
   try {
     const { name } = req.params;
-    const { context } = req.body;
+    const { context, opts } = req.body;
     
     const content = await fs.readFile(path.join(DEPLOY_DIR, `${name}.json`));
     const decision = engine.createDecision(content);
-    const result = await decision.evaluate(context || {});
+    const result = await decision.evaluate(context || {}, opts || {});
     res.json(result);
   } catch (err) {
     res.status(404).json({ error: `Decision '${name}' not found or evaluation failed: ${err.message}` });
@@ -54,9 +80,9 @@ app.post('/evaluate/:name', async (req, res) => {
 // Original endpoint for ad-hoc evaluation
 app.post('/evaluate', async (req, res) => {
   try {
-    const { decision, context } = req.body;
+    const { decision, context, opts } = req.body;
     const d = engine.createDecision(decision);
-    const result = await d.evaluate(context || {});
+    const result = await d.evaluate(context || {}, opts || {});
     res.json(result);
   } catch (err) {
     res.status(500).json({ error: err.message });
