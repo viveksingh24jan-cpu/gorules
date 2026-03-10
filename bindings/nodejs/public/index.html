@@ -3,226 +3,241 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ZEN Decision Studio Enterprise</title>
+    <title>ZEN Decision Studio Pro</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
         :root { --primary: #0052cc; --input-blue: #0052cc; --output-green: #00875a; --border: #dfe1e6; --bg: #f4f5f7; }
-        body { background-color: var(--bg); font-family: -apple-system, sans-serif; height: 100vh; display: flex; flex-direction: column; overflow: hidden; margin: 0; }
+        body { background-color: var(--bg); font-family: 'Inter', system-ui, sans-serif; height: 100vh; display: flex; flex-direction: column; overflow: hidden; margin: 0; }
         
-        .navbar { background: white; border-bottom: 1px solid var(--border); height: 50px; padding: 0 20px; z-index: 1000; }
+        /* Navbar */
+        .navbar { background: white; border-bottom: 1px solid var(--border); height: 64px; padding: 0 24px; z-index: 1000; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
         .main-container { flex: 1; display: flex; overflow: hidden; }
-        .sidebar { width: 280px; background: white; border-right: 1px solid var(--border); display: flex; flex-direction: column; }
-        .content-area { flex: 1; display: flex; flex-direction: column; position: relative; background: #fafbfc; overflow: hidden; }
+        .sidebar { width: 320px; background: white; border-right: 1px solid var(--border); display: flex; flex-direction: column; }
+        .content-area { flex: 1; display: flex; flex-direction: column; position: relative; background: #fff; overflow: hidden; }
         
-        #drd-canvas { flex: 1; cursor: grab; background-image: radial-gradient(#dfe1e6 1px, transparent 1px); background-size: 20px 20px; width: 100%; height: 100%; }
-        .node-rect { fill: white; stroke: #42526e; stroke-width: 2px; cursor: move; }
+        /* Header & Tabs */
+        .workspace-header { background: #fdfdfd; border-bottom: 1px solid var(--border); padding: 12px 24px; display: flex; justify-content: space-between; align-items: center; }
+        .nav-tabs-custom { display: flex; gap: 4px; background: #ebecf0; padding: 4px; border-radius: 8px; }
+        .tab-btn { padding: 6px 20px; font-size: 13px; font-weight: 600; border: none; background: transparent; color: #42526e; border-radius: 6px; transition: 0.2s; }
+        .tab-btn.active { background: white; color: var(--primary); box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+
+        /* DMN Table */
+        .dmn-table-container { flex: 1; overflow: auto; padding: 24px; background: #fafbfc; display: block; }
+        .dmn-table { border-collapse: collapse; min-width: 100%; font-size: 13px; table-layout: fixed; background: white; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        .dmn-table th, .dmn-table td { border: 1px solid var(--border); position: relative; }
+        .th-main-in { background: var(--input-blue); color: white; text-align: center; padding: 8px; font-size: 11px; text-transform: uppercase; font-weight: 700; }
+        .th-main-out { background: var(--output-green); color: white; text-align: center; padding: 8px; font-size: 11px; text-transform: uppercase; font-weight: 700; }
+        .th-sub { background: #f4f5f7; padding: 8px; color: #172b4d; font-weight: 600; }
+        .dmn-table input { width: 100%; height: 38px; border: none; padding: 0 12px; outline: none; background: transparent; }
+        .dmn-table input:focus { background: #e6effc; box-shadow: inset 0 0 0 2px var(--primary); }
+        .row-winner { background-color: #e3fcef !important; border: 2px solid #36b37e; }
+
+        /* DRD Graph */
+        #view-graph { flex: 1; display: none; position: relative; }
+        #view-graph.active { display: flex; }
+        #drd-canvas { flex: 1; background-image: radial-gradient(#dfe1e6 1px, transparent 1px); background-size: 24px 24px; }
+        .node-rect { fill: white; stroke: #42526e; stroke-width: 2px; rx: 6; cursor: grab; }
         .node-rect.selected { stroke: var(--primary); stroke-width: 4px; }
-        .node-rect.decisionTableNode { stroke: var(--primary); }
-        .node-rect.functionNode { stroke: #ffab00; }
-        .node-rect.httpNode { stroke: #6554c0; }
-        .node-text { font-size: 11px; font-weight: 600; fill: #172b4d; pointer-events: none; text-anchor: middle; }
-        .perf-badge { fill: #6b778c; font-size: 9px; font-weight: bold; }
+        .node-text { font-size: 12px; font-weight: 600; fill: #172b4d; pointer-events: none; }
         .edge-path { fill: none; stroke: #b3bac5; stroke-width: 2px; }
 
-        .editor-overlay { position: absolute; inset: 0; background: white; z-index: 2000; display: none; flex-direction: column; }
-        .editor-overlay.active { display: flex; }
-        .editor-header { padding: 10px 20px; border-bottom: 1px solid var(--border); background: #fafbfc; display: flex; align-items: center; justify-content: space-between; }
-        
-        .dmn-table-wrapper { flex: 1; overflow: auto; padding: 20px; }
-        .dmn-table { border-collapse: collapse; min-width: 100%; font-size: 13px; table-layout: fixed; }
-        .dmn-table th, .dmn-table td { border: 1px solid var(--border); position: relative; }
-        
-        .hit-policy-badge { width: 34px; height: 34px; background: #f4f5f7; border: 1px solid var(--border); font-weight: bold; display: flex; align-items: center; justify-content: center; font-size: 18px; margin-right: 15px; }
-        .th-main-in { background: var(--input-blue); color: white; text-align: center; padding: 6px; font-size: 11px; text-transform: uppercase; }
-        .th-main-out { background: var(--output-green); color: white; text-align: center; padding: 6px; font-size: 11px; text-transform: uppercase; }
-        
-        .code-editor { font-family: 'Fira Code', monospace; font-size: 14px; padding: 20px; border: none; outline: none; resize: none; background: #1e1e1e; color: #d4d4d4; height: 100%; width: 100%; }
-        
-        /* Bottom Panel Extensions */
-        .bottom-panel { height: 280px; background: white; border-top: 1px solid var(--border); display: flex; }
+        /* Bottom Simulator */
+        .bottom-panel { height: 280px; background: white; border-top: 1px solid var(--border); display: flex; z-index: 100; }
         .sim-pane { flex: 1; display: flex; flex-direction: column; border-right: 1px solid var(--border); }
-        .pane-header { padding: 8px 15px; background: #fafbfc; border-bottom: 1px solid var(--border); font-size: 11px; font-weight: bold; color: #5e6c84; display: flex; justify-content: space-between; align-items: center; }
+        .pane-header { padding: 8px 16px; background: #f4f5f7; border-bottom: 1px solid var(--border); font-size: 11px; font-weight: 700; color: #5e6c84; text-transform: uppercase; display: flex; justify-content: space-between; align-items: center; }
 
-        .toolbar { position: absolute; top: 10px; left: 10px; display: flex; flex-direction: column; gap: 5px; background: white; padding: 5px; border: 1px solid var(--border); border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); z-index: 10; }
-        .integration-hub { background: #f4f5f7; border-radius: 4px; padding: 10px; margin-top: 5px; font-family: monospace; font-size: 11px; }
+        .status-bar { height: 28px; background: #172b4d; color: white; font-size: 11px; display: flex; align-items: center; padding: 0 15px; }
+        .scroll { flex: 1; overflow: auto; }
+        .rule-item { padding: 12px 16px; border-bottom: 1px solid #f4f5f7; cursor: pointer; transition: 0.2s; }
+        .rule-item:hover { background: #f4f5f7; border-left: 4px solid var(--primary); }
     </style>
 </head>
 <body>
+    <!-- Global Navigation -->
     <nav class="navbar d-flex justify-content-between align-items-center">
         <div class="d-flex align-items-center">
-            <img src="https://gorules.io/images/logo.svg" height="26" class="me-3">
-            <span class="fw-bold text-primary">ZEN Decision Studio Enterprise</span>
+            <img src="https://gorules.io/images/logo.svg" height="32" class="me-3">
+            <h4 class="mb-0 fw-bold text-primary">ZEN Decision Studio</h4>
         </div>
-        <div class="d-flex gap-2">
-            <div class="input-group input-group-sm" style="width: 250px;">
-                <input type="text" id="rule-name" class="form-control" value="enterprise_rule">
-                <button class="btn btn-primary" onclick="deployRule()">Deploy</button>
+        <div class="d-flex gap-3">
+            <div class="input-group shadow-sm" style="width: 450px;">
+                <span class="input-group-text bg-light fw-bold text-muted small">RULE ID</span>
+                <input type="text" id="rule-name" class="form-control fw-bold" value="my_business_rules">
+                <button class="btn btn-primary px-4 fw-bold" onclick="deployRule()" title="Push rules to engine"><i class="fas fa-rocket me-2"></i>DEPLOY</button>
             </div>
-            <button class="btn btn-sm btn-outline-secondary" onclick="newRule()">New</button>
+            <button class="btn btn-outline-danger fw-bold" onclick="resetStudio()" title="Reset to default template">RESET</button>
         </div>
     </nav>
 
     <div class="main-container">
+        <!-- Sidebar: Rule Management -->
         <div class="sidebar">
-            <div class="p-2 border-bottom">
-                <input type="text" id="search-rules" class="form-control form-control-sm" placeholder="Search deployments..." oninput="filterRules(this.value)">
+            <div class="p-3 border-bottom bg-light">
+                <input type="text" id="search-rules" class="form-control" placeholder="Search saved rules..." oninput="filterRules(this.value)">
             </div>
             <div id="rule-list" class="scroll"></div>
-            <div class="p-3 border-top mt-auto small">
-                <div class="fw-bold text-muted mb-2">INTEGRATION HUB</div>
-                <select id="sdk-lang" class="form-select form-select-sm mb-2" onchange="updateSDK()">
-                    <option value="curl">cURL / API</option>
-                    <option value="nodejs">Node.js SDK</option>
-                    <option value="python">Python SDK</option>
-                    <option value="go">Go SDK</option>
-                </select>
-                <div id="sdk-snippet" class="integration-hub scroll" style="height: 100px;"></div>
+            
+            <div class="p-4 border-top mt-auto bg-white">
+                <h6 class="fw-bold mb-3 text-muted">CONTROL PANEL</h6>
+                <button class="btn btn-success w-100 mb-2 py-2 fw-bold shadow-sm" onclick="runSim()"><i class="fas fa-play-circle me-2"></i>RUN SIMULATION</button>
+                <button class="btn btn-outline-info w-100 mb-2 fw-bold" onclick="downloadJDM()"><i class="fas fa-file-export me-2"></i>EXPORT JDM JSON</button>
+                <div class="mt-3 xsmall text-muted text-center">Engine Status: <span class="text-success fw-bold">ONLINE</span></div>
             </div>
         </div>
 
+        <!-- Main Workspace -->
         <div class="content-area">
-            <div class="toolbar">
-                <button class="btn btn-sm btn-light" onclick="addNode('inputNode')" title="Add Input"><i class="fas fa-sign-in-alt"></i></button>
-                <button class="btn btn-sm btn-light" onclick="addNode('decisionTableNode')" title="Add Decision Table"><i class="fas fa-table"></i></button>
-                <button class="btn btn-sm btn-light" onclick="addNode('httpNode')" title="Add External API (HTTP)"><i class="fas fa-cloud-download-alt" style="color:#6554c0"></i></button>
-                <button class="btn btn-sm btn-light" onclick="addNode('functionNode')" title="Add Function"><i class="fab fa-js"></i></button>
-                <button class="btn btn-sm btn-light" onclick="addNode('outputNode')" title="Add Output"><i class="fas fa-flag-checkered"></i></button>
-                <hr class="my-1">
-                <button class="btn btn-sm btn-outline-danger" onclick="deleteSelected()"><i class="fas fa-trash"></i></button>
-                <button class="btn btn-sm btn-outline-secondary" onclick="autoLayout()"><i class="fas fa-magic"></i></button>
-            </div>
-            <svg id="drd-canvas"></svg>
-
-            <div id="editor-overlay" class="editor-overlay">
-                <div class="editor-header">
-                    <div class="d-flex align-items-center">
-                        <div id="editor-badge" class="hit-policy-badge">F</div>
-                        <input type="text" id="editor-title-input" class="fw-bold border-0 bg-transparent" style="outline:none">
-                    </div>
-                    <div id="editor-actions" class="d-flex gap-2"></div>
+            <div class="workspace-header">
+                <div class="nav-tabs-custom">
+                    <button id="tab-table" class="tab-btn active" onclick="switchView('table')"><i class="fas fa-table me-2"></i>DECISION TABLE</button>
+                    <button id="tab-graph" class="tab-btn" onclick="switchView('graph')"><i class="fas fa-project-diagram me-2"></i>FLOW GRAPH</button>
                 </div>
-                <div id="editor-content" class="flex-grow-1 d-flex flex-column overflow-hidden"></div>
+                <div id="table-controls" class="d-flex gap-2">
+                    <button class="btn btn-sm btn-primary px-3 fw-bold shadow-sm" onclick="addCol('input')"><i class="fas fa-plus me-1"></i>INPUT COL</button>
+                    <button class="btn btn-sm btn-success px-3 fw-bold shadow-sm" onclick="addCol('output')"><i class="fas fa-plus me-1"></i>OUTPUT COL</button>
+                    <div class="vr mx-1"></div>
+                    <button class="btn btn-sm btn-dark px-4 fw-bold shadow-sm" onclick="addRow()"><i class="fas fa-plus me-1"></i>ADD RULE ROW</button>
+                </div>
             </div>
 
+            <!-- Full DMN Table View -->
+            <div id="view-table" class="dmn-table-container">
+                <table class="dmn-table" id="dmn-table">
+                    <thead id="dmn-thead"></thead>
+                    <tbody id="dmn-tbody"></tbody>
+                </table>
+            </div>
+
+            <!-- Visual Graph View -->
+            <div id="view-graph">
+                <div class="p-3 position-absolute" style="z-index:10">
+                    <button class="btn btn-sm btn-white border shadow-sm" onclick="addNode('decisionTableNode')"><i class="fas fa-plus-square me-1 text-primary"></i>Add Table Node</button>
+                    <button class="btn btn-sm btn-white border shadow-sm ms-2" onclick="autoLayout()"><i class="fas fa-magic me-1 text-warning"></i>Organize Graph</button>
+                </div>
+                <svg id="drd-canvas"></svg>
+            </div>
+
+            <!-- Integrated Simulation Panel -->
             <div class="bottom-panel">
-                <div class="sim-pane" style="max-width: 350px;">
-                    <div class="pane-header">SIMULATION CONTEXT <button class="btn btn-xs btn-success" onclick="runSim()">RUN</button></div>
-                    <textarea id="test-input" class="form-control font-monospace flex-grow-1 border-0 rounded-0" style="font-size: 12px;">{ "input": 10 }</textarea>
+                <div class="sim-pane" style="max-width: 420px;">
+                    <div class="pane-header">INPUT CONTEXT (JSON)</div>
+                    <textarea id="test-input" class="form-control font-monospace border-0 rounded-0 flex-grow-1 p-3" style="font-size:12px; background:#fafafa; line-height:1.5">{
+  "income": 5000,
+  "age": 30
+}</textarea>
                 </div>
                 <div class="sim-pane">
-                    <div class="pane-header">RESULT</div>
-                    <pre id="test-result" class="scroll m-0 p-3 text-primary small fw-bold"></pre>
+                    <div class="pane-header">EXECUTION RESULT</div>
+                    <pre id="test-result" class="scroll m-0 p-3 text-primary small fw-bold" style="line-height:1.4"></pre>
                 </div>
-                <div class="sim-pane" style="max-width: 250px;">
-                    <div class="pane-header">PERF (µs)</div>
-                    <div id="perf-list" class="scroll p-2 small"></div>
+                <div class="sim-pane" style="max-width: 280px;">
+                    <div class="pane-header">LATENCY / TRACE</div>
+                    <div id="perf-list" class="scroll p-3 small font-monospace text-success"></div>
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- Footer -->
+    <div class="status-bar">
+        <div class="d-flex align-items-center"><i class="fas fa-circle text-success me-2" style="font-size:8px"></i> <span id="status-text">Studio Ready</span></div>
+        <span class="ms-auto opacity-50">ZEN ENGINE v0.53 • Master Edition 2024</span>
+    </div>
+
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <script>
-        let currentJDM = {
+        const DEFAULT_TEMPLATE = {
             nodes: [
-                { id: "n1", type: "inputNode", name: "Request", position: { x: 50, y: 150 }, content: { schema: null } },
-                { id: "n2", type: "decisionTableNode", name: "Logic", position: { x: 250, y: 150 }, content: { hitPolicy: "first", inputs: [{ id: "i1", field: "input", name: "Val" }], outputs: [{ id: "o1", field: "res", name: "Result" }], rules: [{ _id: "r1", i1: "> 5", o1: "'OK'" }] } },
-                { id: "n3", type: "outputNode", name: "Response", position: { x: 450, y: 150 }, content: { schema: null } }
+                { id: "in1", type: "inputNode", name: "Request", position: { x: 100, y: 150 }, content: { schema: null } },
+                { id: "dt1", type: "decisionTableNode", name: "Main Logic", position: { x: 350, y: 150 }, content: { hitPolicy: "first", inputs: [{ id: "i1", field: "income", name: "Income" }], outputs: [{ id: "o1", field: "res", name: "Decision" }], rules: [{ _id: "r1", i1: "> 4000", o1: "'APPROVED'" }] } },
+                { id: "out1", type: "outputNode", name: "Response", position: { x: 600, y: 150 }, content: { schema: null } }
             ],
-            edges: [{ id: "e1", sourceId: "n1", targetId: "n2" }, { id: "e2", sourceId: "n2", targetId: "n3" }]
+            edges: [{ id: "e1", sourceId: "in1", targetId: "dt1" }, { id: "e2", sourceId: "dt1", targetId: "out1" }]
         };
 
-        let selectedNodeId = null, lastTrace = null, allRulesList = [];
+        let currentJDM = JSON.parse(JSON.stringify(DEFAULT_TEMPLATE));
+        let selectedNodeId = "dt1", lastTrace = null, allRules = [];
+        
         const svg = d3.select("#drd-canvas"), container = svg.append("g");
-        svg.call(d3.zoom().scaleExtent([0.2, 3]).on("zoom", (ev) => container.attr("transform", ev.transform)));
+        svg.call(d3.zoom().on("zoom", (ev) => container.attr("transform", ev.transform)));
+
+        function switchView(v) {
+            document.getElementById('view-table').style.display = (v === 'table' ? 'block' : 'none');
+            document.getElementById('view-graph').style.display = (v === 'graph' ? 'flex' : 'none');
+            document.getElementById('tab-table').classList.toggle('active', v === 'table');
+            document.getElementById('tab-graph').classList.toggle('active', v === 'graph');
+            document.getElementById('table-controls').style.display = (v === 'table' ? 'flex' : 'none');
+            if (v === 'table') renderTable(); else renderDRD();
+        }
 
         function renderDRD() {
             container.selectAll("*").remove();
-            container.append("defs").append("marker").attr("id", "arrow").attr("viewBox", "0 0 10 10").attr("refX", 10).attr("refY", 5).attr("markerWidth", 6).attr("markerHeight", 6).attr("orient", "auto").append("path").attr("d", "M 0 0 L 10 5 L 0 10 z").attr("fill", "#b3bac5");
-            
+            container.append("defs").append("marker").attr("id","arrow").attr("viewBox","0 0 10 10").attr("refX",10).attr("refY",5).attr("markerWidth",6).attr("markerHeight",6).attr("orient","auto").append("path").attr("d","M 0 0 L 10 5 L 0 10 z").attr("fill","#b3bac5");
             currentJDM.edges.forEach(e => {
                 const s = currentJDM.nodes.find(n => n.id === e.sourceId), t = currentJDM.nodes.find(n => n.id === e.targetId);
-                if(!s || !t) return;
-                container.append("line").attr("class", "edge-path").attr("x1", s.position.x + 140).attr("y1", s.position.y + 35).attr("x2", t.position.x).attr("y2", t.position.y + 35).attr("marker-end", "url(#arrow)");
+                if(s && t) container.append("line").attr("class","edge-path").attr("x1",s.position.x+160).attr("y1",s.position.y+35).attr("x2",t.position.x).attr("y2",t.position.y+35).attr("marker-end","url(#arrow)");
             });
-
-            const nodes = container.selectAll(".node").data(currentJDM.nodes).enter().append("g").attr("transform", d => `translate(${d.position.x},${d.position.y})`).call(d3.drag().on("drag", (ev, d) => { d.position.x += ev.dx; d.position.y += ev.dy; renderDRD(); }))
-                .on("click", (ev, d) => { ev.stopPropagation(); if(ev.shiftKey && selectedNodeId) { currentJDM.edges.push({id:'e'+Date.now(), sourceId:selectedNodeId, targetId:d.id}); renderDRD(); } else { selectedNodeId = d.id; renderDRD(); } })
-                .on("dblclick", (ev, d) => openEditor(d.id));
-
-            nodes.append("rect").attr("width", 140).attr("height", 70).attr("rx", 4).attr("class", d => "node-rect " + d.type + (selectedNodeId === d.id ? " selected" : ""));
-            nodes.append("text").attr("x", 70).attr("y", 40).attr("class", "node-text").text(d => d.name);
-            
-            if(lastTrace) {
-                nodes.each(function(d) {
-                    if(lastTrace[d.id]) d3.select(this).append("text").attr("class", "perf-badge").attr("x", 70).attr("y", 60).attr("text-anchor", "middle").text(lastTrace[d.id].performance);
-                });
-            }
-        }
-
-        function openEditor(id) {
-            selectedNodeId = id; const node = currentJDM.nodes.find(n => n.id === id), overlay = document.getElementById('editor-overlay'), content = document.getElementById('editor-content'), actions = document.getElementById('editor-actions');
-            overlay.classList.add('active'); document.getElementById('editor-title-input').value = node.name;
-            actions.innerHTML = '<button class="btn btn-sm btn-dark" onclick="closeEditor()">SAVE & CLOSE</button>';
-            
-            if (node.type === 'decisionTableNode') {
-                document.getElementById('editor-badge').style.display='flex';
-                content.innerHTML = `<div class="dmn-table-wrapper"><table class="dmn-table"><thead id="dmn-thead"></thead><tbody id="dmn-tbody"></tbody></table></div>`; renderTable();
-            } else if (node.type === 'httpNode') {
-                document.getElementById('editor-badge').style.display='none';
-                content.innerHTML = `<div class="p-4"><h6>HTTP Node Configuration</h6><label class="small">URL</label><input type="text" class="form-control mb-2" id="node-url" value="${node.content.url||''}">
-                    <label class="small">Method</label><select class="form-select mb-2" id="node-method"><option value="GET">GET</option><option value="POST">POST</option></select></div>`;
-                document.getElementById('node-url').oninput = (e) => node.content.url = e.target.value;
-            } else {
-                document.getElementById('editor-badge').style.display='none';
-                content.innerHTML = `<textarea class="code-editor" id="node-code">${node.type==='functionNode'?node.content.source:(node.content.schema?JSON.stringify(JSON.parse(node.content.schema),null,2):'')}</textarea>`;
-                document.getElementById('node-code').oninput = (ev) => { if(node.type==='functionNode') node.content.source = ev.target.value; else try { node.content.schema = JSON.stringify(JSON.parse(ev.target.value)); } catch(e) {} };
-            }
+            const nodes = container.selectAll(".node").data(currentJDM.nodes).enter().append("g").attr("transform", d => `translate(${d.position.x},${d.position.y})`)
+                .call(d3.drag().on("drag", (ev, d) => { d.position.x += ev.dx; d.position.y += ev.dy; renderDRD(); }))
+                .on("click", (ev, d) => { ev.stopPropagation(); selectedNodeId = d.id; renderDRD(); });
+            nodes.append("rect").attr("width", 160).attr("height", 70).attr("class", d => "node-rect " + d.type + (selectedNodeId === d.id ? " selected" : ""));
+            nodes.append("text").attr("x", 80).attr("y", 40).attr("class", "node-text").attr("text-anchor","middle").text(d => d.name);
         }
 
         function renderTable() {
-            const dt = currentJDM.nodes.find(n => n.id === selectedNodeId).content, thead = document.getElementById('dmn-thead'), tbody = document.getElementById('dmn-tbody'), winnerId = lastTrace?.[selectedNodeId]?.traceData?.rule?._id;
-            thead.innerHTML = `<tr><th rowspan="2" style="width:40px"></th><th colspan="${dt.inputs.length}" class="th-main-in">Inputs</th><th colspan="${dt.outputs.length}" class="th-main-out">Outputs</th><th rowspan="2" style="width:40px"></th></tr>
-                <tr>${dt.inputs.map((i,idx)=>`<th class="th-sub"><b>${i.name}</b></th>`).join('')}${dt.outputs.map((o,idx)=>`<th class="th-sub"><b>${o.name}</b></th>`).join('')}</tr>`;
-            tbody.innerHTML = dt.rules.map((r,idx)=>`<tr class="${r._id===winnerId?'row-winner':''}"><td>${idx+1}</td>${dt.inputs.map(i=>`<td><input type="text" value="${r[i.id]||''}" oninput="updateCell(${idx},'${i.id}',this.value)"></td>`).join('')}${dt.outputs.map(o=>`<td><input type="text" value="${r[o.id]||''}" oninput="updateCell(${idx},'${o.id}',this.value)"></td>`).join('')}<td class="text-center"><i class="fas fa-trash-alt text-muted cursor-pointer" onclick="removeRow(${idx})"></i></td></tr>`).join('');
+            // Self-healing: if selectedNodeId is not a table, find the first available table
+            let dtNode = currentJDM.nodes.find(n => n.id === selectedNodeId && n.type === 'decisionTableNode');
+            if(!dtNode) dtNode = currentJDM.nodes.find(n => n.type === 'decisionTableNode');
+            if(!dtNode) { document.getElementById('dmn-tbody').innerHTML = "<tr><td colspan='100' class='p-5 text-center text-muted'>No Decision Table found. Click RESET or add one in the Graph view.</td></tr>"; return; }
+            
+            selectedNodeId = dtNode.id;
+            const dt = dtNode.content, thead = document.getElementById('dmn-thead'), tbody = document.getElementById('dmn-tbody'), winnerId = lastTrace?.[selectedNodeId]?.traceData?.rule?._id;
+            
+            thead.innerHTML = `<tr><th rowspan="2" style="width:50px" class="text-center bg-light">#</th><th colspan="${dt.inputs.length}" class="th-main-in">Inputs</th><th colspan="${dt.outputs.length}" class="th-main-out">Outputs</th><th rowspan="2" style="width:50px" class="bg-light"></th></tr>
+                <tr>${dt.inputs.map((i,idx)=>`<th class="th-sub"><b>${i.name}</b><br><small class="text-primary">${i.field}</small></th>`).join('')}${dt.outputs.map((o,idx)=>`<th class="th-sub"><b>${o.name}</b><br><small class="text-success">${o.field}</small></th>`).join('')}</tr>`;
+            
+            tbody.innerHTML = dt.rules.map((r,idx)=>`<tr class="${r._id===winnerId?'row-winner':''}">
+                <td class="text-center text-muted fw-bold">${idx+1}</td>
+                ${dt.inputs.map(i=>`<td><input type="text" value="${r[i.id]||''}" oninput="updateCell('${selectedNodeId}',${idx},'${i.id}',this.value)"></td>`).join('')}
+                ${dt.outputs.map(o=>`<td><input type="text" value="${r[o.id]||''}" oninput="updateCell('${selectedNodeId}',${idx},'${o.id}',this.value)"></td>`).join('')}
+                <td class="text-center"><i class="fas fa-trash-alt text-muted cursor-pointer" onclick="removeRow(${idx})"></i></td>
+            </tr>`).join('');
         }
 
-        function updateCell(r,c,v) { currentJDM.nodes.find(n=>n.id===selectedNodeId).content.rules[r][c]=v; }
-        function removeRow(idx) { currentJDM.nodes.find(n=>n.id===selectedNodeId).content.rules.splice(idx,1); renderTable(); }
-        function closeEditor() { document.getElementById('editor-overlay').classList.remove('active'); renderDRD(); updateSDK(); }
-
-        function addNode(t) { const id='n'+Date.now(), n={id,type:t,name:'New',position:{x:100,y:100},content:{}}; if(t==='decisionTableNode') n.content={hitPolicy:'first',inputs:[{id:'i1',field:'input',name:'In'}],outputs:[{id:'o1',field:'output',name:'Out'}],rules:[{_id:'r1'}]}; else if(t==='httpNode') n.content={url:'https://api.example.com',method:'GET'}; currentJDM.nodes.push(n); renderDRD(); }
-        function deleteSelected() { currentJDM.nodes=currentJDM.nodes.filter(n=>n.id!==selectedNodeId); currentJDM.edges=currentJDM.edges.filter(e=>e.sourceId!==selectedNodeId&&e.targetId!==selectedNodeId); selectedNodeId=null; renderDRD(); }
-        function autoLayout() { currentJDM.nodes.forEach((n,i) => { n.position.x = 50 + (i*180); n.position.y = 150; }); renderDRD(); }
+        function updateCell(nid,rIdx,cid,val) { const n = currentJDM.nodes.find(n=>n.id===nid); if(n) n.content.rules[rIdx][cid] = val; }
+        function addRow() { const n = currentJDM.nodes.find(n=>n.id===selectedNodeId); if(n) { n.content.rules.push({_id:'r'+Date.now()}); renderTable(); } }
+        function addCol(t) { const n = currentJDM.nodes.find(n=>n.id===selectedNodeId); if(n) { const id = t[0]+Date.now(); n.content[t+'s'].push({id, field:'field_'+id, name:'New Col'}); renderTable(); } }
+        function removeRow(idx) { const n = currentJDM.nodes.find(n=>n.id===selectedNodeId); if(n) { n.content.rules.splice(idx,1); renderTable(); } }
 
         async function runSim() {
-            const ctx = JSON.parse(document.getElementById('test-input').value);
-            const res = await fetch('/evaluate', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({decision:currentJDM, context:ctx, opts:{trace:true}}) });
-            const data = await res.json(); lastTrace = data.trace;
-            document.getElementById('test-result').textContent = JSON.stringify(data.result, null, 2);
-            document.getElementById('perf-list').innerHTML = Object.values(data.trace).map(t => `<div class="mb-1"><b>${t.name}</b>: ${t.performance}</div>`).join('');
-            renderDRD(); if(selectedNodeId) renderTable();
+            document.getElementById('status-text').textContent = "SIMULATING...";
+            try {
+                const ctx = JSON.parse(document.getElementById('test-input').value);
+                const res = await fetch('/evaluate', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({decision:currentJDM, context:ctx, opts:{trace:true}}) });
+                const data = await res.json();
+                if(data.error) throw new Error(data.error);
+                lastTrace = data.trace;
+                document.getElementById('test-result').textContent = JSON.stringify(data.result, null, 2);
+                document.getElementById('perf-list').innerHTML = Object.values(data.trace).map(t => `<div>${t.name}: <b class="float-end">${t.performance}</b></div>`).join('');
+                renderTable(); document.getElementById('status-text').textContent = "Simulation Ready (" + data.performance + ")";
+            } catch(e) { document.getElementById('test-result').textContent = "Error: " + e.message; document.getElementById('status-text').textContent = "Execution Failed"; }
         }
 
-        async function deployRule() { await fetch(`/deploy/${document.getElementById('rule-name').value}`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(currentJDM) }); alert("Deployed!"); loadList(); }
-        async function loadList() { allRulesList = await (await fetch('/decisions')).json(); filterRules(""); }
-        function filterRules(q) { document.getElementById('rule-list').innerHTML = allRulesList.filter(n=>n.includes(q)).map(n=>`<div class="p-2 border-bottom small rule-row" onclick="loadRule('${n}')"><i class="fas fa-file-code me-2 text-primary"></i>${n}</div>`).join(''); }
-        async function loadRule(n) { currentJDM = await (await fetch(`/deploy/${n}`)).json(); document.getElementById('rule-name').value=n; renderDRD(); updateSDK(); }
-
-        function updateSDK() {
-            const lang = document.getElementById('sdk-lang').value;
+        async function deployRule() { 
             const name = document.getElementById('rule-name').value;
-            const snippets = {
-                curl: `curl -X POST http://localhost:3000/evaluate/${name} \\\n  -H "Content-Type: application/json" \\\n  -d '{"input": 10}'`,
-                nodejs: `const res = await fetch('http://localhost:3000/evaluate/${name}', {\n  method: 'POST',\n  body: JSON.stringify({ context: { input: 10 } })\n});`,
-                python: `import requests\nres = requests.post('http://localhost:3000/evaluate/${name}', \n  json={'context': {'input': 10}})`
-            };
-            document.getElementById('sdk-snippet').textContent = snippets[lang] || snippets.curl;
+            await fetch(`/deploy/${name}`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(currentJDM) }); 
+            alert("Rules successfully deployed as '" + name + "'!"); loadList(); 
         }
+        async function loadList() { allRules = await (await fetch('/decisions')).json(); document.getElementById('rule-list').innerHTML = allRules.map(n=>`<div class="rule-item" onclick="loadRule('${n}')"><b><i class="fas fa-file-code me-2 text-primary"></i>${n}</b></div>`).join(''); }
+        async function loadRule(n) { currentJDM = await (await fetch(`/deploy/${n}`)).json(); document.getElementById('rule-name').value=n; switchView('table'); }
+        function resetStudio() { if(confirm("Reset everything? Unsaved changes will be lost.")) { currentJDM = JSON.parse(JSON.stringify(DEFAULT_TEMPLATE)); selectedNodeId="dt1"; switchView('table'); } }
+        function autoLayout() { currentJDM.nodes.forEach((n,i) => { n.position.x = 100 + (i*250); n.position.y = 150; }); renderDRD(); }
+        function addNode(t) { const id='n'+Date.now(); currentJDM.nodes.push({id, type:t, name:'New Node', position:{x:200,y:200}, content:{ hitPolicy:'first', inputs:[{id:'i1',field:'input',name:'In'}], outputs:[{id:'o1',field:'output',name:'Out'}], rules:[{_id:'r1'}] }}); renderDRD(); }
+        function downloadJDM() { const b = new Blob([JSON.stringify(currentJDM,null,2)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download=document.getElementById('rule-name').value+".json"; a.click(); }
+        function filterRules(q) { document.getElementById('rule-list').innerHTML = allRules.filter(n=>n.includes(q)).map(n=>`<div class="rule-item" onclick="loadRule('${n}')"><b>${n}</b></div>`).join(''); }
 
-        function newRule() { currentJDM={nodes:[],edges:[]}; renderDRD(); }
-        window.onload = () => { renderDRD(); loadList(); updateSDK(); };
+        window.onload = () => { switchView('table'); loadList(); };
     </script>
 </body>
 </html>
