@@ -29,7 +29,7 @@
         .tab-btn.active { background: white; color: var(--primary); box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
 
         /* DMN Table */
-        .dmn-table-container { flex: 1; overflow: auto; padding: 24px; background: #fafbfc; display: block; }
+        .dmn-table-container { flex: 1; overflow: auto; padding: 24px; background: #fafbfc; }
         .dmn-table { border-collapse: collapse; min-width: 100%; font-size: 13px; table-layout: fixed; background: white; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border: 1px solid var(--border); }
         .dmn-table th, .dmn-table td { border: 1px solid var(--border); position: relative; vertical-align: middle; }
         .th-main-in { background: var(--input-blue); color: white; text-align: center; padding: 10px; font-size: 11px; text-transform: uppercase; font-weight: 700; }
@@ -58,8 +58,8 @@
         .btn-icon-danger:hover { opacity: 1; transform: scale(1.2); }
 
         /* Integration Hub */
-        .integration-hub { background: #172b4d; color: #a5adba; border-radius: 6px; padding: 15px; font-family: 'Fira Code', monospace; font-size: 11px; position: relative; margin-top: 5px; overflow: auto; }
-        .copy-badge { position: absolute; top: 10px; right: 10px; background: rgba(255,255,255,0.1); padding: 4px 10px; border-radius: 4px; cursor: pointer; color: white; font-size: 10px; font-weight: bold; }
+        .integration-hub { background: #172b4d; color: #a5adba; border-radius: 6px; padding: 15px; font-family: 'Fira Code', monospace; font-size: 11px; position: relative; margin-top: 5px; overflow: auto; min-height: 80px; }
+        .copy-badge { position: absolute; top: 8px; right: 8px; background: rgba(255,255,255,0.1); padding: 4px 10px; border-radius: 4px; cursor: pointer; color: white; font-size: 10px; font-weight: bold; }
         .copy-badge:hover { background: rgba(255,255,255,0.2); }
 
         /* Tooltip style */
@@ -82,7 +82,7 @@
                 <input type="text" id="rule-name" class="form-control fw-bold" value="my_business_rules">
                 <button class="btn btn-primary px-4 fw-bold" onclick="deployRule()" data-narrate="Save as a new version in the registry"><i class="fas fa-save me-2"></i>SAVE VERSION</button>
             </div>
-            <button class="btn btn-success fw-bold px-4" id="promote-btn" onclick="promoteToProd()" style="display:none" data-narrate="Make this version live in PRODUCTION"><i class="fas fa-check-double me-2"></i>PROMOTE TO PROD</button>
+            <button class="btn btn-success fw-bold px-4" id="promote-btn" onclick="promoteToProd()" style="display:none" data-narrate="Make this version live in PRODUCTION"><i class="fas fa-check-double me-2"></i>PROMOTE</button>
             <button class="btn btn-outline-danger fw-bold" onclick="resetStudio()" data-narrate="Wipe all logic and reset to template">RESET</button>
         </div>
     </nav>
@@ -91,12 +91,12 @@
         <!-- Sidebar -->
         <div class="sidebar shadow-sm">
             <div class="p-3 border-bottom bg-white">
-                <button class="btn btn-primary w-100 fw-bold mb-3 shadow-sm" onclick="newRule()" data-narrate="Start a completely new Decision Model">
+                <button class="btn btn-primary w-100 fw-bold mb-3 shadow-sm" onclick="newRule()">
                     <i class="fas fa-plus-circle me-2"></i>CREATE NEW RULE
                 </button>
                 <div class="d-flex justify-content-between align-items-center">
                     <input type="text" id="search-rules" class="form-control form-control-sm me-2" placeholder="Search rules..." oninput="filterRules(this.value)">
-                    <i class="fas fa-sync text-muted cursor-pointer" onclick="loadList()" data-narrate="Refresh deployment list"></i>
+                    <i class="fas fa-sync text-muted cursor-pointer" onclick="loadList()"></i>
                 </div>
             </div>
             <div id="rule-list" class="scroll"></div>
@@ -161,10 +161,10 @@
             </div>
 
             <!-- Integrated Simulator -->
-            <div class="bottom-panel">
+            <div class="bottom-panel shadow-sm">
                 <div class="sim-pane" style="max-width: 420px;">
-                    <div class="pane-header">INPUT CONTEXT <button class="btn btn-xs btn-success fw-bold px-3" onclick="runSim()" data-narrate="Test logic against this JSON context">RUN SIMULATION</button></div>
-                    <textarea id="test-input" class="form-control font-monospace border-0 rounded-0 flex-grow-1 p-3" style="font-size:12px; background:#fafafa; line-height:1.5">{ "income": 5000, "age": 30 }</textarea>
+                    <div class="pane-header">INPUT CONTEXT (JSON) <button class="btn btn-xs btn-success fw-bold px-3" onclick="runSim()" data-narrate="Test logic against this JSON context">RUN SIMULATION</button></div>
+                    <textarea id="test-input" class="form-control font-monospace border-0 rounded-0 flex-grow-1 p-3" style="font-size:12px; background:#fdfdfd; line-height:1.5"></textarea>
                 </div>
                 <div class="sim-pane">
                     <div class="pane-header">ENGINE RESULT</div>
@@ -256,24 +256,25 @@
                 ${dt.outputs.map(o=>`<td><input type="text" value="${r[o.id]||''}" oninput="updateCell('${selectedNodeId}',${idx},'${o.id}',this.value)"></td>`).join('')}
                 <td class="text-center"><i class="fas fa-minus-circle btn-icon-danger" onclick="removeRow(${idx})"></i></td>
             </tr>`).join('');
+            
+            updateInputContext();
+            updateSDK();
         }
 
         function updateColProp(type, idx, prop, val) {
             const n = currentJDM.nodes.find(n => n.id === selectedNodeId);
             if (n && n.content[type + 's'][idx]) {
                 n.content[type + 's'][idx][prop] = val;
-                updateSDK(); 
-                if (prop === 'field' && type === 'input') updateInputContext();
+                if(prop === 'field' && type === 'input') updateInputContext();
+                updateSDK();
             }
         }
 
         function updateInputContext() {
-            const dtNode = currentJDM.nodes.find(n => n.type === 'decisionTableNode');
-            if (!dtNode) return;
+            const n = currentJDM.nodes.find(n => n.id === selectedNodeId);
+            if (!n) return;
             const context = {};
-            dtNode.content.inputs.forEach(i => {
-                context[i.field] = 100; // default sample value
-            });
+            n.content.inputs.forEach(i => context[i.field] = 100);
             document.getElementById('test-input').value = JSON.stringify(context, null, 2);
         }
 
@@ -282,6 +283,64 @@
         function addCol(t) { const n = currentJDM.nodes.find(n=>n.id===selectedNodeId); if(n) { const id = t[0]+Date.now(); n.content[t+'s'].push({id, field:'field_'+id, name:'New Col'}); renderTable(); } }
         function delCol(type, idx) { const n = currentJDM.nodes.find(n=>n.id===selectedNodeId); if(n) { const col = n.content[type+'s'][idx]; n.content[type+'s'].splice(idx, 1); n.content.rules.forEach(r => delete r[col.id]); renderTable(); } }
         function removeRow(idx) { const n = currentJDM.nodes.find(n=>n.id===selectedNodeId); if(n) { n.content.rules.splice(idx,1); renderTable(); } }
+
+        function updateSDK() {
+            const lang = document.getElementById('sdk-lang').value;
+            const name = document.getElementById('rule-name').value;
+            const n = currentJDM.nodes.find(n => n.id === selectedNodeId);
+            const context = {};
+            if(n) n.content.inputs.forEach(i => context[i.field] = 100);
+            const snippets = {
+                curl: `curl -X POST http://localhost:3000/evaluate/${name} \\\n  -H "Content-Type: application/json" \\\n  -d '{"tag": "PRODUCTION", "context": ${JSON.stringify(context)}}'`,
+                nodejs: `const res = await fetch('http://localhost:3000/evaluate/${name}', {\n  method: 'POST',\n  body: JSON.stringify({ tag: 'PRODUCTION', context: ${JSON.stringify(context)} })\n});`,
+                python: `import requests\nres = requests.post('http://localhost:3000/evaluate/${name}', \n  json={'tag': 'PRODUCTION', 'context': ${JSON.stringify(context)}})`
+            };
+            document.getElementById('sdk-snippet').textContent = snippets[lang] || snippets.curl;
+        }
+
+        function copySDK() { navigator.clipboard.writeText(document.getElementById('sdk-snippet').textContent); alert("Copied!"); }
+
+        async function runSim() {
+            try {
+                const ctx = JSON.parse(document.getElementById('test-input').value);
+                const res = await fetch('/evaluate', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({decision:currentJDM, context:ctx, opts:{trace:true}}) });
+                const data = await res.json(); lastTrace = data.trace;
+                document.getElementById('test-result').textContent = JSON.stringify(data.result, null, 2);
+                document.getElementById('perf-list').innerHTML = Object.values(data.trace).map(t => `<div class="d-flex justify-content-between"><span>${t.name}</span><b class="text-success">${t.performance}</b></div>`).join('');
+                renderTable();
+            } catch(e) { alert("Invalid Simulation Context JSON"); }
+        }
+
+        async function deployRule() { await fetch(`/deploy/${document.getElementById('rule-name').value}`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ content: currentJDM }) }); loadList(); alert("Deployed!"); }
+        
+        async function loadList() { 
+            const res = await fetch('/decisions');
+            allRules = await res.json(); 
+            const list = document.getElementById('rule-list');
+            if(!allRules || allRules.length === 0) { list.innerHTML = "<div class='p-4 text-center'><button class='btn btn-sm btn-primary' onclick='newRule()'>+ CREATE FIRST RULE</button></div>"; return; }
+            list.innerHTML = allRules.map(r => {
+                const name = r.name || 'Unnamed';
+                const date = r.updatedAt ? new Date(r.updatedAt).toLocaleDateString() : 'New';
+                return `<div class="rule-card ${currentRuleInfo?.name === name ? 'active' : ''}" onclick="loadRule('${name}')">
+                    <div class="d-flex justify-content-between"><b>${name}</b> <span class="badge-version">${r.latestVersion || 'v1'}</span></div>
+                    <div class="d-flex justify-content-between mt-1">${r.productionVersion ? `<span class="badge-prod">PROD</span>` : '<span class="text-muted small">Draft</span>'}<span class="text-muted" style="font-size:9px">${date}</span></div>
+                </div>`;
+            }).join('');
+        }
+
+        async function loadRule(n) { 
+            const res = await fetch(`/deploy/${n}?tag=LATEST`);
+            currentJDM = await res.json(); 
+            document.getElementById('rule-name').value = n;
+            document.getElementById('promote-btn').style.display = 'block';
+            currentRuleInfo = allRules.find(r => r.name === n);
+            loadList(); updateSDK(); switchView('table'); 
+        }
+
+        async function promoteToProd() {
+            await fetch(`/promote/${document.getElementById('rule-name').value}`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ versionId: currentRuleInfo.latestVersion }) });
+            alert("Promoted!"); loadList();
+        }
 
         function exportCSV() {
             const n = currentJDM.nodes.find(n => n.id === selectedNodeId);
@@ -312,144 +371,18 @@
             reader.readAsText(file);
         }
 
-        function updateSDK() {
-            const lang = document.getElementById('sdk-lang').value;
-            const name = document.getElementById('rule-name').value;
-            const snippets = {
-                curl: `curl -X POST http://localhost:3000/evaluate/${name} \\\n  -H "Content-Type: application/json" \\\n  -d '{"tag": "PRODUCTION", "context": {"income": 5000}}'`,
-                nodejs: `const res = await fetch('http://localhost:3000/evaluate/${name}', {\n  method: 'POST',\n  body: JSON.stringify({ tag: 'PRODUCTION', context: { income: 5000 } })\n});`,
-                python: `import requests\n\nres = requests.post(\n    'http://localhost:3000/evaluate/${name}',\n    json={'tag': 'PRODUCTION', 'context': {'income': 5000}}\n)\nprint(res.json())`
-            };
-            document.getElementById('sdk-snippet').textContent = snippets[lang] || snippets.curl;
-        }
-
-        function copySDK() {
-            const text = document.getElementById('sdk-snippet').textContent;
-            navigator.clipboard.writeText(text);
-            const badge = document.querySelector('.copy-badge');
-            badge.innerHTML = '<i class="fas fa-check"></i> COPIED!';
-            setTimeout(() => badge.innerHTML = '<i class="fas fa-copy"></i> COPY', 2000);
-        }
-
-        async function runSim() {
-            try {
-                const ctx = JSON.parse(document.getElementById('test-input').value);
-                const res = await fetch('/evaluate', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({decision:currentJDM, context:ctx, opts:{trace:true}}) });
-                const data = await res.json(); lastTrace = data.trace;
-                document.getElementById('test-result').textContent = JSON.stringify(data.result, null, 2);
-                document.getElementById('perf-list').innerHTML = Object.values(data.trace).map(t => `<div class="mb-1 d-flex justify-content-between"><span>${t.name}</span><b class="text-success">${t.performance}</b></div>`).join('');
-                renderTable();
-            } catch(e) { alert("Invalid Simulation Context JSON"); }
-        }
-
-        async function deployRule() { 
-            const name = document.getElementById('rule-name').value;
-            await fetch(`/deploy/${name}`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ content: currentJDM }) }); 
-            loadList(); updateSDK(); alert("Deployed!");
-        }
-
-        async function loadList() { 
-            const res = await fetch('/decisions');
-            allRules = await res.json(); 
-            const list = document.getElementById('rule-list');
-            
-            if (!allRules || allRules.length === 0) {
-                list.innerHTML = `
-                    <div class="p-4 text-center">
-                        <div class="text-muted small mb-3">No rules deployed yet.</div>
-                        <button class="btn btn-sm btn-primary fw-bold" onclick="deployRule()">CREATE FIRST RULE</button>
-                    </div>
-                `;
-                return;
-            }
-
-            list.innerHTML = allRules.map(r => {
-                const name = r.name || 'Unnamed';
-                const version = r.latestVersion || 'v0';
-                const date = r.updatedAt ? new Date(r.updatedAt).toLocaleDateString() : 'New';
-                const activeClass = currentRuleInfo?.name === name ? 'active' : '';
-                
-                return `
-                    <div class="rule-card ${activeClass}" onclick="loadRule('${name}')">
-                        <div class="d-flex justify-content-between align-items-center mb-1">
-                            <span class="fw-bold">${name}</span>
-                            <span class="badge-version">${version}</span>
-                        </div>
-                        <div class="d-flex gap-2 align-items-center">
-                            ${r.productionVersion ? `<span class="badge-prod">PROD: ${r.productionVersion}</span>` : '<span class="text-muted" style="font-size:10px">Draft</span>'}
-                            <span class="text-muted ms-auto" style="font-size:9px">${date}</span>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-        }
-
-        function filterRules(q) { 
-            const filtered = allRules.filter(n => n.name && n.name.toLowerCase().includes(q.toLowerCase()));
-            const list = document.getElementById('rule-list');
-            if (filtered.length === 0) {
-                list.innerHTML = '<div class="p-3 text-center text-muted small">No matches found</div>';
-                return;
-            }
-            // Use same template logic as loadList but for filtered
-            list.innerHTML = filtered.map(r => {
-                const name = r.name || 'Unnamed';
-                const version = r.latestVersion || 'v0';
-                const date = r.updatedAt ? new Date(r.updatedAt).toLocaleDateString() : 'New';
-                const activeClass = currentRuleInfo?.name === name ? 'active' : '';
-                return `
-                    <div class="rule-card ${activeClass}" onclick="loadRule('${name}')">
-                        <div class="d-flex justify-content-between align-items-center mb-1">
-                            <span class="fw-bold">${name}</span>
-                            <span class="badge-version">${version}</span>
-                        </div>
-                        <div class="d-flex gap-2 align-items-center">
-                            ${r.productionVersion ? `<span class="badge-prod">PROD: ${r.productionVersion}</span>` : '<span class="text-muted" style="font-size:10px">Draft</span>'}
-                            <span class="text-muted ms-auto" style="font-size:9px">${date}</span>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-        }
-
-        async function loadRule(n) { 
-            const res = await fetch(`/deploy/${n}?tag=LATEST`);
-            currentJDM = await res.json(); 
-            document.getElementById('rule-name').value = n;
-            document.getElementById('promote-btn').style.display = 'block';
-            currentRuleInfo = allRules.find(r => r.name === n);
-            loadList(); updateSDK(); switchView('table'); 
-        }
-
-        async function promoteToProd() {
-            const name = document.getElementById('rule-name').value;
-            if(!currentRuleInfo) return;
-            const versionId = currentRuleInfo.latestVersion;
-            const res = await fetch(`/promote/${name}`, { 
-                method:'POST', 
-                headers:{'Content-Type':'application/json'}, 
-                body:JSON.stringify({ versionId }) 
-            });
-            const data = await res.json();
-            alert(data.message);
-            loadList();
-        }
-
         function newRule() { 
             currentJDM = JSON.parse(JSON.stringify(DEFAULT_TEMPLATE)); 
             selectedNodeId = "dt1";
             lastTrace = null;
-            
             document.getElementById('rule-name').value = "new_rule_" + Math.floor(Math.random()*1000); 
             document.getElementById('test-result').textContent = "";
             document.getElementById('perf-list').innerHTML = "";
             document.getElementById('promote-btn').style.display = 'none';
             currentRuleInfo = null;
-            
             switchView('table'); 
             updateSDK(); 
             loadList();
-            logStatus("New rule template loaded");
         }
 
         function resetStudio() { if(confirm("Reset everything?")) { newRule(); } }
