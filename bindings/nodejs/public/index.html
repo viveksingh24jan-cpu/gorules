@@ -262,8 +262,19 @@
             const n = currentJDM.nodes.find(n => n.id === selectedNodeId);
             if (n && n.content[type + 's'][idx]) {
                 n.content[type + 's'][idx][prop] = val;
-                updateSDK(); // Update cURL snippets if field name changes
+                updateSDK(); 
+                if (prop === 'field' && type === 'input') updateInputContext();
             }
+        }
+
+        function updateInputContext() {
+            const dtNode = currentJDM.nodes.find(n => n.type === 'decisionTableNode');
+            if (!dtNode) return;
+            const context = {};
+            dtNode.content.inputs.forEach(i => {
+                context[i.field] = 100; // default sample value
+            });
+            document.getElementById('test-input').value = JSON.stringify(context, null, 2);
         }
 
         function updateCell(nid,rIdx,cid,val) { const n = currentJDM.nodes.find(n=>n.id===nid); if(n) n.content.rules[rIdx][cid] = val; }
